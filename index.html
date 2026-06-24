@@ -1,0 +1,1003 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" id="themeColor" content="#FFFFFF">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%236D5AE0'/%3E%3Ctext x='16' y='23' font-size='20' text-anchor='middle' fill='white' font-family='sans-serif'%3E%E2%97%87%3C/text%3E%3C/svg%3E">
+<title>PsychBridge — Interventional Psychiatry Companion</title>
+<style>
+/* ===== RESET ===== */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{font-size:16px;-webkit-text-size-adjust:100%;-webkit-tap-highlight-color:transparent;}
+
+/* ===== DESIGN TOKENS (from SignBridge system) ===== */
+:root{
+  --primary:#6D5AE0; --primary-hover:#5A47CC; --primary-light:#EEEBFB; --primary-muted:#B7ADF0;
+  --accent:#0E9F9A; --accent-light:#E4F6F5;
+  --success:#059669; --success-light:#ECFDF5;
+  --warning:#D97706; --warning-light:#FFFBEB;
+  --danger:#DC2626; --danger-light:#FEF2F2;
+  --info:#0891B2;
+  --bg:#F7F7FB; --bg-elevated:#FFFFFF; --bg-inset:#F1F1F8;
+  --border:#E6E6F0; --border-strong:#CBCBDB;
+  --text-primary:#15131F; --text-secondary:#544F66; --text-tertiary:#9893AB; --text-inverse:#FFFFFF;
+  --shadow-sm:0 1px 2px rgba(20,15,40,0.05);
+  --shadow-md:0 1px 3px rgba(20,15,40,0.08),0 1px 2px rgba(20,15,40,0.04);
+  --shadow-lg:0 6px 20px rgba(20,15,40,0.10);
+  --radius-sm:6px; --radius-md:9px; --radius-lg:13px; --radius-full:9999px;
+  --space-xs:4px; --space-sm:8px; --space-md:12px; --space-lg:16px; --space-xl:20px; --space-2xl:24px; --space-3xl:32px;
+  --font:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;
+  --font-mono:'SF Mono','Fira Code','Consolas',monospace;
+  --max-width:480px; --nav-height:56px; --tab-height:60px;
+  --safe-bottom:env(safe-area-inset-bottom,0px);
+}
+[data-theme="dark"]{
+  --primary:#8B7BF0; --primary-hover:#9D8FF5; --primary-light:#2A2542; --primary-muted:#5A4F9A;
+  --accent:#2DC6C0; --accent-light:#0E3937;
+  --bg:#100E1A; --bg-elevated:#1B1828; --bg-inset:#13111E;
+  --border:#2C2A3D; --border-strong:#403D55;
+  --text-primary:#F2F1F7; --text-secondary:#A7A3BC; --text-tertiary:#6E6A85; --text-inverse:#100E1A;
+  --primary-light:#241F3D; --success-light:#06352A; --warning-light:#3D2207; --danger-light:#3D0E0E; --accent-light:#0C2E2C;
+  --shadow-sm:0 1px 2px rgba(0,0,0,0.3); --shadow-md:0 1px 3px rgba(0,0,0,0.4); --shadow-lg:0 6px 20px rgba(0,0,0,0.5);
+}
+body{font-family:var(--font);background:var(--bg);color:var(--text-primary);line-height:1.5;overflow:hidden;height:100dvh;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;}
+.app{max-width:var(--max-width);margin:0 auto;height:100dvh;display:flex;flex-direction:column;background:var(--bg);position:relative;overflow:hidden;}
+
+/* ===== TOP NAV ===== */
+.top-nav{height:var(--nav-height);display:flex;align-items:center;justify-content:space-between;padding:0 var(--space-lg);background:var(--bg-elevated);border-bottom:1px solid var(--border);flex-shrink:0;z-index:10;}
+.top-nav h1{font-size:17px;font-weight:800;letter-spacing:-0.3px;display:flex;align-items:center;gap:6px;}
+.top-nav h1 .logo{width:22px;height:22px;border-radius:7px;background:linear-gradient(135deg,var(--primary),var(--accent));display:inline-flex;align-items:center;justify-content:center;color:#fff;font-size:12px;}
+.top-nav h1 .brand-mark{color:var(--primary);}
+.nav-actions{display:flex;align-items:center;gap:var(--space-sm);}
+.nav-btn{height:34px;min-width:34px;padding:0 9px;border-radius:var(--radius-md);border:1px solid var(--border);background:var(--bg-elevated);display:flex;align-items:center;justify-content:center;gap:5px;cursor:pointer;font-size:13px;color:var(--text-secondary);font-family:var(--font);transition:background .15s,border-color .15s;}
+.nav-btn:active{background:var(--bg-inset);}
+
+/* ===== PATIENT BAR ===== */
+.patient-bar{display:flex;align-items:center;gap:var(--space-sm);padding:9px var(--space-lg);background:var(--bg-inset);border-bottom:1px solid var(--border);flex-shrink:0;cursor:pointer;}
+.patient-bar .pavatar{width:30px;height:30px;border-radius:var(--radius-full);background:var(--primary-light);color:var(--primary);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;flex-shrink:0;}
+.patient-bar .pinfo{flex:1;min-width:0;}
+.patient-bar .pname{font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.patient-bar .pmeta{font-size:11px;color:var(--text-tertiary);}
+.phi-pill{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;padding:2px 6px;border-radius:var(--radius-full);background:var(--warning-light);color:var(--warning);border:1px solid var(--warning);}
+.deid-pill{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;padding:2px 6px;border-radius:var(--radius-full);background:var(--success-light);color:var(--success);border:1px solid var(--success);}
+.patient-bar .chev{color:var(--text-tertiary);font-size:13px;}
+
+/* ===== MODE SWITCHER ===== */
+.mode-switcher{display:flex;gap:5px;margin:var(--space-md) var(--space-lg) 2px;background:var(--bg-inset);border-radius:var(--radius-md);padding:4px;border:1px solid var(--border);}
+.mode-btn{flex:1;padding:8px 2px;border:none;background:transparent;font-family:var(--font);font-size:12px;font-weight:600;color:var(--text-tertiary);cursor:pointer;border-radius:7px;transition:all .15s;display:flex;flex-direction:column;align-items:center;gap:2px;}
+.mode-btn .mi{font-size:15px;line-height:1.2;}
+.mode-btn.active{background:var(--bg-elevated);color:var(--primary);box-shadow:var(--shadow-sm);}
+
+/* ===== SCREENS ===== */
+.screen-container{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;}
+.screen{display:none;padding:var(--space-lg);padding-bottom:90px;}
+.screen.active{display:block;animation:fade .2s ease;}
+@keyframes fade{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:none;}}
+
+/* ===== TAB BAR ===== */
+.tab-bar{position:absolute;bottom:0;left:0;right:0;height:calc(var(--tab-height) + var(--safe-bottom));padding-bottom:var(--safe-bottom);display:flex;background:var(--bg-elevated);border-top:1px solid var(--border);z-index:20;}
+.tab{flex:1;border:none;background:transparent;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;cursor:pointer;color:var(--text-tertiary);font-family:var(--font);font-size:10px;font-weight:600;transition:color .15s;}
+.tab .ti{font-size:18px;line-height:1;}
+.tab.active{color:var(--primary);}
+
+/* ===== TYPOGRAPHY / LAYOUT ===== */
+.section-label{font-size:11px;font-weight:700;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:.06em;margin:var(--space-lg) 0 var(--space-sm);}
+.section-label:first-child{margin-top:0;}
+.screen h2{font-size:20px;font-weight:800;letter-spacing:-.4px;margin-bottom:2px;}
+.screen .subtitle{font-size:13px;color:var(--text-secondary);margin-bottom:var(--space-md);}
+.card{background:var(--bg-elevated);border:1px solid var(--border);border-radius:var(--radius-lg);padding:var(--space-lg);margin-bottom:var(--space-md);box-shadow:var(--shadow-sm);}
+.card.flush{padding:0;overflow:hidden;}
+.muted{color:var(--text-tertiary);font-size:12px;}
+.row{display:flex;gap:var(--space-sm);}
+.row>*{flex:1;}
+
+/* ===== BUTTONS ===== */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:11px 16px;border-radius:var(--radius-md);border:1px solid var(--border);background:var(--bg-elevated);color:var(--text-primary);font-family:var(--font);font-size:14px;font-weight:600;cursor:pointer;transition:all .15s;width:100%;}
+.btn:active{transform:scale(.99);}
+.btn.primary{background:var(--primary);border-color:var(--primary);color:#fff;}
+.btn.primary:active{background:var(--primary-hover);}
+.btn.ghost{background:transparent;}
+.btn.danger{background:var(--danger-light);border-color:var(--danger);color:var(--danger);}
+.btn.sm{padding:8px 12px;font-size:13px;width:auto;}
+.btn.accent{background:var(--accent);border-color:var(--accent);color:#fff;}
+
+/* ===== FORM FIELDS ===== */
+.field{margin-bottom:var(--space-md);}
+.field label{display:block;font-size:12px;font-weight:600;color:var(--text-secondary);margin-bottom:5px;}
+.field .hint{font-size:11px;color:var(--text-tertiary);font-weight:400;}
+.inp{width:100%;padding:11px var(--space-md);border:1px solid var(--border);border-radius:var(--radius-md);background:var(--bg-inset);color:var(--text-primary);font-family:var(--font);font-size:15px;outline:none;transition:border-color .15s;}
+.inp:focus{border-color:var(--primary);}
+.inp.with-unit{padding-right:48px;}
+.unit-wrap{position:relative;}
+.unit-wrap .unit{position:absolute;right:12px;top:50%;transform:translateY(-50%);font-size:12px;color:var(--text-tertiary);font-weight:600;pointer-events:none;}
+select.inp{appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M3 4.5L6 7.5L9 4.5' stroke='%239893AB' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:32px;}
+textarea.inp{resize:vertical;min-height:80px;font-size:14px;line-height:1.5;}
+
+/* segmented control */
+.seg{display:flex;flex-wrap:wrap;gap:5px;}
+.seg button{flex:1;min-width:38px;padding:9px 4px;border:1px solid var(--border);border-radius:var(--radius-md);background:var(--bg-inset);color:var(--text-secondary);font-family:var(--font);font-size:13px;font-weight:600;cursor:pointer;transition:all .12s;}
+.seg button.on{background:var(--primary);border-color:var(--primary);color:#fff;}
+.seg.yn button{flex:1;}
+.seg.yn button.on.yes{background:var(--danger);border-color:var(--danger);}
+.seg.yn button.on.no{background:var(--success);border-color:var(--success);}
+
+/* ===== FLAG / ALERT ===== */
+.flag{display:flex;gap:8px;align-items:flex-start;padding:10px var(--space-md);border-radius:var(--radius-md);font-size:13px;margin-bottom:var(--space-sm);line-height:1.45;}
+.flag .fi{flex-shrink:0;font-size:14px;margin-top:1px;}
+.flag.warn{background:var(--warning-light);color:var(--warning);border:1px solid var(--warning);}
+.flag.danger{background:var(--danger-light);color:var(--danger);border:1px solid var(--danger);}
+.flag.ok{background:var(--success-light);color:var(--success);border:1px solid var(--success);}
+.flag.info{background:var(--primary-light);color:var(--primary);border:1px solid var(--primary-muted);}
+.flag strong{font-weight:800;}
+
+/* ===== I-FEEL / DISTRESS CARDS ===== */
+.feel-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:var(--space-sm);}
+.feel-card{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:18px 8px;border-radius:var(--radius-lg);border:1.5px solid var(--border);background:var(--bg-elevated);cursor:pointer;text-align:center;transition:all .12s;box-shadow:var(--shadow-sm);}
+.feel-card .fe{font-size:30px;line-height:1;}
+.feel-card .fl{font-size:13px;font-weight:700;}
+.feel-card:active{transform:scale(.97);}
+.feel-card.urgent{border-color:var(--danger);background:var(--danger-light);}
+.feel-card.urgent .fl{color:var(--danger);}
+.feel-card.sel{border-color:var(--primary);background:var(--primary-light);box-shadow:0 0 0 3px rgba(109,90,224,.15);}
+
+/* distress slider */
+.distress{padding:var(--space-md) 0;}
+.distress input[type=range]{width:100%;height:8px;-webkit-appearance:none;border-radius:var(--radius-full);background:linear-gradient(90deg,#059669,#D97706,#DC2626);outline:none;}
+.distress input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:28px;height:28px;border-radius:50%;background:#fff;border:3px solid var(--primary);box-shadow:var(--shadow-md);cursor:pointer;}
+.distress-val{font-size:40px;font-weight:800;text-align:center;letter-spacing:-1px;}
+.distress-scale{display:flex;justify-content:space-between;font-size:11px;color:var(--text-tertiary);margin-top:4px;}
+
+/* ===== SCALE LIST ===== */
+.scale-item{display:flex;align-items:center;gap:var(--space-md);padding:var(--space-md) var(--space-lg);border-bottom:1px solid var(--border);cursor:pointer;}
+.scale-item:last-child{border-bottom:none;}
+.scale-item:active{background:var(--bg-inset);}
+.scale-item .sic{width:38px;height:38px;border-radius:var(--radius-md);background:var(--primary-light);color:var(--primary);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:11px;flex-shrink:0;text-align:center;line-height:1.1;}
+.scale-item .sinfo{flex:1;min-width:0;}
+.scale-item .sname{font-size:14px;font-weight:700;}
+.scale-item .sdesc{font-size:11px;color:var(--text-tertiary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.scale-item .slast{font-size:12px;font-weight:700;color:var(--text-secondary);text-align:right;}
+
+/* scale question (in modal) */
+.q{margin-bottom:var(--space-lg);padding-bottom:var(--space-lg);border-bottom:1px solid var(--border);}
+.q:last-of-type{border-bottom:none;}
+.q .qn{font-size:11px;font-weight:800;color:var(--primary);margin-bottom:3px;}
+.q .qt{font-size:14px;font-weight:600;margin-bottom:var(--space-sm);line-height:1.4;}
+.opt{display:flex;align-items:center;gap:10px;padding:10px var(--space-md);border:1px solid var(--border);border-radius:var(--radius-md);margin-bottom:6px;cursor:pointer;font-size:13px;transition:all .12s;}
+.opt .ov{width:24px;height:24px;border-radius:6px;background:var(--bg-inset);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;color:var(--text-secondary);flex-shrink:0;}
+.opt.on{border-color:var(--primary);background:var(--primary-light);}
+.opt.on .ov{background:var(--primary);color:#fff;}
+
+/* ===== TRAJECTORY / TIMELINE ===== */
+.chart-wrap{padding:var(--space-md) var(--space-sm) var(--space-sm);}
+.chart-legend{display:flex;flex-wrap:wrap;gap:var(--space-md);font-size:11px;color:var(--text-secondary);padding:0 var(--space-sm) var(--space-sm);}
+.chart-legend span{display:flex;align-items:center;gap:5px;}
+.dot{width:9px;height:9px;border-radius:50%;}
+.timeline-item{display:flex;gap:var(--space-md);padding:var(--space-md) 0;border-bottom:1px solid var(--border);}
+.timeline-item:last-child{border-bottom:none;}
+.tl-date{font-size:11px;color:var(--text-tertiary);width:64px;flex-shrink:0;font-weight:600;}
+.tl-body{flex:1;}
+.tl-tag{display:inline-block;font-size:10px;font-weight:700;padding:1px 7px;border-radius:var(--radius-full);background:var(--bg-inset);color:var(--text-secondary);margin-right:5px;}
+
+/* ===== MODAL / SHEET ===== */
+.overlay{position:fixed;inset:0;background:rgba(15,12,30,.5);z-index:100;display:none;align-items:flex-end;justify-content:center;}
+.overlay.open{display:flex;animation:fade .15s;}
+.sheet{background:var(--bg);width:100%;max-width:var(--max-width);max-height:92dvh;border-radius:18px 18px 0 0;display:flex;flex-direction:column;overflow:hidden;animation:slideup .22s cubic-bezier(.32,.72,0,1);}
+@keyframes slideup{from{transform:translateY(100%);}to{transform:none;}}
+.sheet-head{display:flex;align-items:center;justify-content:space-between;padding:var(--space-lg);border-bottom:1px solid var(--border);background:var(--bg-elevated);flex-shrink:0;}
+.sheet-head h3{font-size:16px;font-weight:800;}
+.sheet-head .sh-sub{font-size:11px;color:var(--text-tertiary);font-weight:500;}
+.sheet-body{overflow-y:auto;padding:var(--space-lg);-webkit-overflow-scrolling:touch;}
+.sheet-foot{padding:var(--space-md) var(--space-lg);border-top:1px solid var(--border);background:var(--bg-elevated);flex-shrink:0;display:flex;gap:var(--space-sm);}
+.x-btn{width:32px;height:32px;border-radius:var(--radius-full);border:none;background:var(--bg-inset);color:var(--text-secondary);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+
+/* result banner */
+.result-banner{text-align:center;padding:var(--space-xl);border-radius:var(--radius-lg);margin-bottom:var(--space-md);}
+.result-banner .rb-score{font-size:46px;font-weight:800;line-height:1;letter-spacing:-1px;}
+.result-banner .rb-max{font-size:18px;color:var(--text-tertiary);font-weight:600;}
+.result-banner .rb-sev{font-size:15px;font-weight:700;margin-top:6px;}
+
+/* reference accordion */
+.ref-toggle{display:flex;align-items:center;justify-content:space-between;cursor:pointer;font-size:13px;font-weight:700;color:var(--accent);padding:4px 0;}
+.ref-body{font-size:12px;color:var(--text-secondary);line-height:1.55;margin-top:var(--space-sm);display:none;}
+.ref-body.open{display:block;}
+.ref-body ul{margin:4px 0 8px 16px;}
+.ref-body li{margin-bottom:3px;}
+.ref-body .cite{font-size:10px;color:var(--text-tertiary);font-style:italic;margin-top:6px;display:block;}
+
+.empty{text-align:center;padding:var(--space-3xl) var(--space-lg);color:var(--text-tertiary);}
+.empty .ee{font-size:40px;margin-bottom:var(--space-md);}
+.empty .et{font-size:14px;font-weight:600;color:var(--text-secondary);margin-bottom:4px;}
+
+.note-output{font-family:var(--font-mono);font-size:12px;line-height:1.6;white-space:pre-wrap;word-break:break-word;}
+
+.toast{position:fixed;bottom:calc(var(--tab-height) + 16px + var(--safe-bottom));left:50%;transform:translateX(-50%);background:var(--text-primary);color:var(--bg);padding:10px 18px;border-radius:var(--radius-full);font-size:13px;font-weight:600;z-index:200;box-shadow:var(--shadow-lg);opacity:0;pointer-events:none;transition:opacity .2s;white-space:nowrap;}
+.toast.show{opacity:1;}
+
+.footer-credit{text-align:center;font-size:11px;color:var(--text-tertiary);padding:var(--space-lg) 0 4px;}
+.footer-credit a{color:var(--text-secondary);text-decoration:none;font-weight:600;}
+.disclaimer{font-size:11px;color:var(--text-tertiary);line-height:1.5;background:var(--bg-inset);border:1px solid var(--border);border-radius:var(--radius-md);padding:var(--space-md);margin-bottom:var(--space-md);}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="top-nav">
+    <h1><span class="logo">◇</span>Psych<span class="brand-mark">Bridge</span></h1>
+    <div class="nav-actions">
+      <button class="nav-btn" id="refBtn" title="Reference">📖</button>
+      <button class="nav-btn" id="themeBtn" title="Theme">🌙</button>
+      <button class="nav-btn" id="settingsBtn" title="Settings">⋯</button>
+    </div>
+  </div>
+
+  <div class="patient-bar" id="patientBar">
+    <div class="pavatar" id="pavatar">—</div>
+    <div class="pinfo">
+      <div class="pname" id="pname">No patient selected</div>
+      <div class="pmeta" id="pmeta">Tap to choose or create a patient</div>
+    </div>
+    <span class="chev">›</span>
+  </div>
+
+  <div class="mode-switcher" id="modeSwitcher">
+    <button class="mode-btn active" data-proc="ketamine"><span class="mi">💧</span>Ketamine</button>
+    <button class="mode-btn" data-proc="ect"><span class="mi">⚡</span>ECT</button>
+    <button class="mode-btn" data-proc="tms"><span class="mi">🧲</span>TMS</button>
+    <button class="mode-btn" data-proc="dbs"><span class="mi">🧠</span>DBS</button>
+  </div>
+
+  <div class="screen-container">
+    <div class="screen active" id="screen-monitor"></div>
+    <div class="screen" id="screen-checkin"></div>
+    <div class="screen" id="screen-scales"></div>
+    <div class="screen" id="screen-response"></div>
+    <div class="screen" id="screen-note"></div>
+  </div>
+
+  <div class="tab-bar" id="tabBar">
+    <button class="tab active" data-screen="monitor"><span class="ti">📊</span>Monitor</button>
+    <button class="tab" data-screen="checkin"><span class="ti">💬</span>Check-in</button>
+    <button class="tab" data-screen="scales"><span class="ti">📋</span>Scales</button>
+    <button class="tab" data-screen="response"><span class="ti">📈</span>Response</button>
+    <button class="tab" data-screen="note"><span class="ti">📝</span>Note</button>
+  </div>
+</div>
+
+<div class="overlay" id="overlay"><div class="sheet" id="sheet"></div></div>
+<div class="toast" id="toast"></div>
+
+<script>
+"use strict";
+/* ============================================================
+   PsychBridge — created by D. K. Adrian Williams
+   Single-file, client-side prototype. All data stays local (IndexedDB).
+   Clinical content is cited; see in-app Reference + _research/.
+   NOT a medical device. Not for clinical decisions without validation.
+   ============================================================ */
+
+/* ---------- tiny helpers ---------- */
+const $=(s,r=document)=>r.querySelector(s);
+const $$=(s,r=document)=>[...r.querySelectorAll(s)];
+const el=(t,c,h)=>{const e=document.createElement(t);if(c)e.className=c;if(h!=null)e.innerHTML=h;return e;};
+const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+const nowISO=()=>new Date().toISOString();
+const fmtDate=iso=>{const d=new Date(iso);return d.toLocaleDateString(undefined,{month:'short',day:'numeric'});};
+const fmtDT=iso=>{const d=new Date(iso);return d.toLocaleString(undefined,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});};
+const fmtTime=iso=>new Date(iso).toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit'});
+function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),1900);}
+
+/* ============================================================
+   CLINICAL DATA — SCALES (verbatim items; see _research/scales_verbatim.md)
+   ============================================================ */
+const PHQ_OPTS=[{v:0,l:"Not at all"},{v:1,l:"Several days"},{v:2,l:"More than half the days"},{v:3,l:"Nearly every day"}];
+const CADSS_OPTS=[{v:0,l:"Not at all"},{v:1,l:"Mild"},{v:2,l:"Moderate"},{v:3,l:"Severe"},{v:4,l:"Extreme"}];
+
+const SCALES={
+  phq9:{id:'phq9',name:'PHQ-9',full:'Patient Health Questionnaire-9',abbr:'PHQ\n9',kind:'self',timeframe:'Over the last 2 weeks',
+    leadIn:'Over the last 2 weeks, how often have you been bothered by any of the following problems?',
+    options:PHQ_OPTS,max:27,
+    items:["Little interest or pleasure in doing things","Feeling down, depressed, or hopeless","Trouble falling or staying asleep, or sleeping too much","Feeling tired or having little energy","Poor appetite or overeating","Feeling bad about yourself — or that you are a failure or have let yourself or your family down","Trouble concentrating on things, such as reading the newspaper or watching television","Moving or speaking so slowly that other people could have noticed? Or the opposite — being so fidgety or restless that you have been moving around a lot more than usual","Thoughts that you would be better off dead or of hurting yourself in some way"],
+    score:a=>a.reduce((s,x)=>s+(x||0),0),
+    severity:s=>s>=20?['Severe','danger']:s>=15?['Moderately severe','danger']:s>=10?['Moderate','warn']:s>=5?['Mild','warn']:['Minimal','ok'],
+    remission:s=>s<5, responder:(b,c)=>b>0&&c<=b*0.5,
+    safety:a=>a[8]>0?{idx:9,msg:'PHQ-9 item 9 (thoughts of self-harm) endorsed — assess suicide risk.'}:null,
+    cite:'Kroenke, Spitzer & Williams, J Gen Intern Med 2001. Free to reproduce. apa.org/depression-guideline',license:'Free'},
+
+  gad7:{id:'gad7',name:'GAD-7',full:'Generalized Anxiety Disorder-7',abbr:'GAD\n7',kind:'self',timeframe:'Over the last 2 weeks',
+    leadIn:'Over the last 2 weeks, how often have you been bothered by the following problems?',
+    options:PHQ_OPTS,max:21,
+    items:["Feeling nervous, anxious or on edge","Not being able to stop or control worrying","Worrying too much about different things","Trouble relaxing","Being so restless that it is hard to sit still","Becoming easily annoyed or irritable","Feeling afraid as if something awful might happen"],
+    score:a=>a.reduce((s,x)=>s+(x||0),0),
+    severity:s=>s>=15?['Severe','danger']:s>=10?['Moderate','warn']:s>=5?['Mild','warn']:['Minimal','ok'],
+    remission:s=>s<5, responder:(b,c)=>b>0&&c<=b*0.5,
+    cite:'Spitzer, Kroenke, Williams & Löwe, Arch Intern Med 2006. Free to reproduce.',license:'Free'},
+
+  qids:{id:'qids',name:'QIDS-SR16',full:'Quick Inventory of Depressive Symptomatology (Self-Report)',abbr:'QIDS',kind:'self',timeframe:'Past 7 days',
+    leadIn:'Check the one response to each item that best describes you for the past 7 days. (Sleep, appetite/weight, and psychomotor items are scored by domain — the highest item in each domain counts.)',
+    max:27,
+    items:[
+      {t:"Falling asleep",o:["I never take longer than 30 minutes to fall asleep.","I take at least 30 minutes to fall asleep, less than half the time.","I take at least 30 minutes to fall asleep, more than half the time.","I take more than 60 minutes to fall asleep, more than half the time."]},
+      {t:"Sleep during the night",o:["I do not wake up at night.","I have a restless, light sleep with a few brief awakenings each night.","I wake up at least once a night, but I go back to sleep easily.","I awaken more than once a night and stay awake for 20 minutes or more, more than half the time."]},
+      {t:"Waking up too early",o:["Most of the time, I awaken no more than 30 minutes before I need to get up.","More than half the time, I awaken more than 30 minutes before I need to get up.","I almost always awaken at least 1 hour or so before I need to, but I go back to sleep eventually.","I awaken at least 1 hour before I need to, and can't go back to sleep."]},
+      {t:"Sleeping too much",o:["I sleep no longer than 7–8 hours/night, without napping during the day.","I sleep no longer than 10 hours in a 24-hour period including naps.","I sleep no longer than 12 hours in a 24-hour period including naps.","I sleep longer than 12 hours in a 24-hour period including naps."]},
+      {t:"Feeling sad",o:["I do not feel sad.","I feel sad less than half the time.","I feel sad more than half the time.","I feel sad nearly all of the time."]},
+      {t:"Decreased appetite",o:["There is no change in my usual appetite.","I eat somewhat less often or lesser amounts of food than usual.","I eat much less than usual and only with personal effort.","I rarely eat within a 24-hour period, and only with extreme personal effort or when others persuade me to eat."]},
+      {t:"Increased appetite",o:["There is no change in my usual appetite.","I feel a need to eat more frequently than usual.","I regularly eat more often and/or greater amounts of food than usual.","I feel driven to overeat both at mealtime and between meals."]},
+      {t:"Decreased weight (within the last 2 weeks)",o:["I have not had a change in my weight.","I feel as if I've had a slight weight loss.","I have lost 2 pounds or more.","I have lost 5 pounds or more."]},
+      {t:"Increased weight (within the last 2 weeks)",o:["I have not had a change in my weight.","I feel as if I've had a slight weight gain.","I have gained 2 pounds or more.","I have gained 5 pounds or more."]},
+      {t:"Concentration / decision making",o:["There is no change in my usual capacity to concentrate or make decisions.","I occasionally feel indecisive or find that my attention wanders.","Most of the time, I struggle to focus my attention or to make decisions.","I cannot concentrate well enough to read or cannot make even minor decisions."]},
+      {t:"View of myself",o:["I see myself as equally worthwhile and deserving as other people.","I am more self-blaming than usual.","I largely believe that I cause problems for others.","I think almost constantly about major and minor defects in myself."]},
+      {t:"Thoughts of death or suicide",o:["I do not think of suicide or death.","I feel that life is empty or wonder if it's worth living.","I think of suicide or death several times a week for several minutes.","I think of suicide or death several times a day in some detail, or I have made specific plans for suicide or have actually tried to take my life."]},
+      {t:"General interest",o:["There is no change from usual in how interested I am in other people or activities.","I notice that I am less interested in people or activities.","I find I have interest in only one or two of my formerly pursued activities.","I have virtually no interest in formerly pursued activities."]},
+      {t:"Energy level",o:["There is no change in my usual level of energy.","I get tired more easily than usual.","I have to make a big effort to start or finish my usual daily activities.","I really cannot carry out most of my usual daily activities because I just don't have the energy."]},
+      {t:"Feeling slowed down",o:["I think, speak, and move at my usual rate of speed.","I find that my thinking is slowed down or my voice sounds dull or flat.","It takes me several seconds to respond to most questions, and I'm sure my thinking is slowed.","I am often unable to respond to questions without extreme effort."]},
+      {t:"Feeling restless",o:["I do not feel restless.","I'm often fidgety, wringing my hands, or need to shift how I am sitting.","I have impulses to move about and am quite restless.","At times, I am unable to stay seated and need to pace around."]}
+    ],
+    score:a=>{const g=(...i)=>Math.max(...i.map(x=>a[x]||0));return g(0,1,2,3)+(a[4]||0)+g(5,6,7,8)+(a[9]||0)+(a[10]||0)+(a[11]||0)+(a[12]||0)+(a[13]||0)+g(14,15);},
+    severity:s=>s>=21?['Very severe','danger']:s>=16?['Severe','danger']:s>=11?['Moderate','warn']:s>=6?['Mild','warn']:['None','ok'],
+    remission:s=>s<=5, responder:(b,c)=>b>0&&c<=b*0.5,
+    safety:a=>a[11]>=2?{idx:12,msg:'QIDS item 12 (thoughts of death/suicide) ≥2 — assess suicide risk.'}:null,
+    cite:'Rush et al., Biol Psychiatry 2003;54:573–583. Scoring per ids-qids.org. Free to reproduce.',license:'Free',
+    note:'Severity bands are a widely-used convention, not from the original validation paper.'},
+
+  madrs:{id:'madrs',name:'MADRS',full:'Montgomery–Åsberg Depression Rating Scale',abbr:'MADRS',kind:'clinician',timeframe:'Past 7 days (clinician-rated)',
+    leadIn:'Clinician-rated. Anchors are defined at 0, 2, 4, 6; ratings of 1, 3, 5 are intermediate steps.',
+    max:60, anchorScale:6,
+    items:[
+      {t:"Apparent sadness",o:{0:"No sadness",2:"Looks dispirited but does brighten up without difficulty",4:"Appears sad and unhappy most of the time",6:"Looks miserable all the time; extremely despondent"}},
+      {t:"Reported sadness",o:{0:"Occasional sadness in keeping with the circumstances",2:"Sad or low but brightens up without difficulty",4:"Pervasive sadness or gloominess; mood still influenced by circumstances",6:"Continuous or unvarying sadness, misery or despondency"}},
+      {t:"Inner tension",o:{0:"Placid; only fleeting inner tension",2:"Occasional feelings of edginess and ill-defined discomfort",4:"Continuous inner tension or intermittent panic mastered with some difficulty",6:"Unrelenting dread or anguish; overwhelming panic"}},
+      {t:"Reduced sleep",o:{0:"Sleeps as usual",2:"Slight difficulty dropping off or slightly reduced, light or fitful sleep",4:"Sleep reduced or broken by at least two hours",6:"Less than two or three hours sleep"}},
+      {t:"Reduced appetite",o:{0:"Normal or increased appetite",2:"Slightly reduced appetite",4:"No appetite; food is tasteless",6:"Needs persuasion to eat at all"}},
+      {t:"Concentration difficulties",o:{0:"No difficulties in concentrating",2:"Occasional difficulties collecting one's thoughts",4:"Difficulties concentrating and sustaining thought; reduces reading/conversation",6:"Unable to read or converse without great difficulty"}},
+      {t:"Lassitude",o:{0:"Hardly any difficulty getting started; no sluggishness",2:"Difficulties starting activities",4:"Difficulties starting simple routine activities, carried out with effort",6:"Complete lassitude; unable to do anything without help"}},
+      {t:"Inability to feel",o:{0:"Normal interest in surroundings and other people",2:"Reduced ability to enjoy usual interests",4:"Loss of interest in surroundings; loss of feelings for friends/acquaintances",6:"Emotionally paralysed; inability to feel anger, grief or pleasure"}},
+      {t:"Pessimistic thoughts",o:{0:"No pessimistic thoughts",2:"Fluctuating ideas of failure, self-reproach or self-depreciation",4:"Persistent self-accusations; rational ideas of guilt/sin; increasingly pessimistic",6:"Delusions of ruin, remorse or unredeemable sin; absurd, unshakable self-accusation"}},
+      {t:"Suicidal thoughts",o:{0:"Enjoys life or takes it as it comes",2:"Weary of life; only fleeting suicidal thoughts",4:"Probably better off dead; suicidal thoughts common; suicide considered but no specific plan",6:"Explicit plans for suicide when there is an opportunity; active preparations"}}
+    ],
+    score:a=>a.reduce((s,x)=>s+(x||0),0),
+    severity:s=>s>=35?['Severe','danger']:s>=20?['Moderate','warn']:s>=7?['Mild','warn']:['Normal','ok'],
+    remission:s=>s<=10, responder:(b,c)=>b>0&&c<=b*0.5,
+    safety:a=>a[9]>=4?{idx:10,msg:'MADRS item 10 (suicidal thoughts) ≥4 — assess suicide risk.'}:null,
+    cite:'Montgomery & Åsberg, Br J Psychiatry 1979;134:382–389. © Stuart Montgomery 1978.',license:'© — usage terms apply',
+    note:'Remission threshold defaults to ≤10 (≤12 is an alternative convention). Severity bands are convention.'},
+
+  cadss:{id:'cadss',name:'CADSS',full:'Clinician-Administered Dissociative States Scale (23-item subjective)',abbr:'CADSS',kind:'self',timeframe:'Right now / current state',
+    leadIn:'Rate your present state right now. (Used to track dissociation around ketamine/esketamine dosing — administer pre-dose, ~40 min, and ~1.5 h.)',
+    options:CADSS_OPTS,max:92,
+    items:["Do things seem to be moving in slow motion?","Do things seem to be unreal to you, as if you are in a dream?","Do you have some experience that separates you from what is happening; for instance, do you feel as if you are in a movie or a play, or as if you are a robot?","Do you feel as if you are looking at things from outside of your body?","Do you feel as if you are watching the situation as an observer or a spectator?","Do you feel disconnected from your own body?","Does your sense of your own body feel changed: for instance, does your own body feel unusually large or unusually small?","Do people seem motionless, dead, or mechanical?","Do objects look different than you would expect?","Do colors seem to be diminished in intensity?","Do you see things as if you were in a tunnel, or looking through a wide-angle photographic lens?","Does this interview seem to be taking much longer than you would have expected?","Do things seem to be happening very quickly, as if there is a lifetime in a moment?","Have there been things which have happened during this interview that now you can't account for?","Have you spaced out, or in some other way lost track of what was going on during this experience?","Have sounds almost disappeared or become much stronger than you would have expected?","Do things seem very real, as if there is a special sense of clarity?","Does it seem as if you are looking at the world through a fog, so that people and objects appear far away or unclear?","Do colors seem much brighter than you would have expected?","Do you feel confused about who you really are?","Do you feel like there are different parts of yourself which do not fit together?","Do you have gaps in your memory?","Do you feel like you have more than one identity?"],
+    score:a=>a.reduce((s,x)=>s+(x||0),0),
+    subscales:a=>{const S=(...i)=>i.reduce((s,x)=>s+(a[x]||0),0);return{Depersonalization:S(2,3,4,5,6,19,22),Derealization:S(0,1,7,8,9,10,11,12,15,16,17,18,20),Amnesia:S(13,14,21)};},
+    severity:s=>s>0?['Dissociation present — track vs baseline','info']:['No dissociation reported','ok'],
+    cite:'Bremner et al., J Trauma Stress 1998;11:125–136. 23-item subjective version; scoring per Janssen esketamine SAP.',license:'© — Mapi Trust usage terms',
+    note:'No standardized severity cutoff — interpret as change from pre-dose baseline. Observer items are not included (not publicly sourceable).'},
+
+  cssrs:{id:'cssrs',name:'C-SSRS',full:'Columbia–Suicide Severity Rating Scale (Screener)',abbr:'C\nSSRS',kind:'screener',timeframe:'Past month (behavior: lifetime)',
+    leadIn:'Suicide-risk screener. Triage is driven by the highest-numbered "Yes", not a total score.',
+    cite:'Posner et al. © 2008 Research Foundation for Mental Hygiene. Free, but requires permission via cssrs.columbia.edu to embed.',license:'© — permission required'}
+};
+const SCALE_ORDER=['phq9','gad7','qids','madrs','cadss','cssrs'];
+
+/* ============================================================
+   CLINICAL DATA — PROCEDURES (see _research/procedures_reference.md)
+   ============================================================ */
+const PROCEDURES={
+  ketamine:{name:'Ketamine / Esketamine',icon:'💧',
+    reg:{label:'IV ketamine off-label · esketamine (Spravato) FDA-approved under REMS',tone:'info'},
+    reference:`<strong>Spravato (esketamine) REMS — FDA label:</strong><ul>
+      <li>Self-administered <em>under direct observation</em> of a healthcare provider; certified setting only.</li>
+      <li><strong>Monitor ≥2 hours</strong> after each dose (incl. pulse oximetry); discharge only when BP decreasing and clinically stable.</li>
+      <li>BP: assess pre-dose; reassess at <strong>~40 min (Cmax)</strong> and as clinically warranted. Pre-dose hold guide if &gt;140/90.</li>
+      <li>No driving until next day after restful sleep; arrange transport home.</li></ul>
+      <strong>Vital-sign flags (transient HTN = key AE):</strong><ul>
+      <li>SBP ≥180 or DBP ≥110; rise of ≥40 SBP and/or ≥25 DBP. BP peaks ~40 min, lasts ~4 h.</li>
+      <li>Contraindicated: aneurysmal vascular disease, AVM, prior intracerebral hemorrhage.</li></ul>
+      <strong>IV ketamine (consensus, off-label):</strong> 0.5 mg/kg over ~40 min; acute series 2–3×/week. Optimal dose contested.<br>
+      <strong>Sedation:</strong> RASS / MOAA-S (any decrease from pre-dose = sedation). <strong>Dissociation:</strong> CADSS vs baseline.
+      <span class="cite">FDA Spravato PI (211243s016); Sanacora et al., JAMA Psychiatry 2017; Sessler RASS 2002.</span>`},
+  ect:{name:'Electroconvulsive Therapy',icon:'⚡',
+    reg:{label:'Established treatment · FDA-cleared devices',tone:'ok'},
+    reference:`<strong>Seizure adequacy:</strong><ul>
+      <li>EEG seizure (primary monitor) adequacy convention ~<strong>≥20–30 s</strong>; motor (cuff) historical ≥15 s. Duration is necessary-but-not-sufficient — weigh <em>quality</em>.</li>
+      <li>Prolonged: &gt;120 s consider terminating; &gt;180 s = status epilepticus, terminate.</li></ul>
+      <strong>Stimulus dose</strong> = charge (mC). Placement / dose above seizure threshold (ST): RUL ~5–6× ST (least cognitive) · bitemporal ~1.5× ST (most robust, most cognitive) · bifrontal ~1.5× ST.<br>
+      <strong>Ictal quality indices:</strong> postictal suppression index (strongest single marker), amplitude, ictal coherence, peak HR response.<br>
+      <strong>Cognitive marker — reorientation time:</strong> &gt;30 min is a red flag (worse retrograde memory).<br>
+      <strong>Agents:</strong> methohexital 0.5–1 (reference) · etomidate 0.15–0.3 (longest seizures) · propofol 0.75–1 (shortens seizures) · ketamine. Succinylcholine 0.5–1 (NMB).
+      <span class="cite">Indian ECT CPG (PMC10096214); Sackeim NEJM 1993; Sobin 1995; StatPearls NBK576431.</span>`},
+  tms:{name:'Transcranial Magnetic Stimulation',icon:'🧲',
+    reg:{label:'FDA-cleared for depression (rTMS, iTBS, SAINT)',tone:'ok'},
+    reference:`<strong>Resting motor threshold (RMT):</strong> lowest %MSO evoking MEP ≥50 µV in ≥5/10 trials (APB/FDI). Prefer EMG over visual twitch.<br>
+      <strong>Standard 10 Hz L-DLPFC:</strong> 120% RMT, 4 s train / 26 s ITI, 75 trains, ~3000 pulses, ~37.5 min. Course 20–30 sessions.<br>
+      <strong>iTBS:</strong> 50 Hz triplets at 5 Hz, 2 s on / 8 s off, 600 pulses, ~3 min, 120% RMT (non-inferior — THREE-D 2018).<br>
+      <strong>SAINT/SNT:</strong> 10 sessions/day ×5 days, 1800 pulses/session, 90% RMT, fMRI-targeted.<br>
+      <strong>Safety (IFCN):</strong> 10 Hz @120% max single-train 4.2 s; ITI ≥5 s. AEs: scalp pain (habituates), headache, hearing (earplugs), vasovagal, rare seizure (~&lt;2/100k within guidelines), uncommon hypomania. Check hardware/implants.
+      <span class="cite">Rossi 2009/2021; Perera 2016; Blumberger THREE-D 2018; Cole SAINT 2020.</span>`},
+  dbs:{name:'Deep Brain Stimulation',icon:'🧠',
+    reg:{label:'INVESTIGATIONAL for depression · OCD only under HDE (H050003)',tone:'warn'},
+    reference:`<strong>Regulatory:</strong> psychiatric DBS for <em>depression is investigational</em> (largest RCT, RECLAIM 2015, was negative). Only authorization is an HDE for treatment-resistant <em>OCD</em> (Medtronic Reclaim, ALIC/VC-VS).<br>
+      <strong>Awake per-contact testing → therapeutic window:</strong> step each contact, log acute benefit vs side-effect thresholds. Monopolar first; bipolar to widen window.<br>
+      <strong>Typical parameters:</strong> amplitude SCC ~2–8 V / slMFB ~1–3.5 mA; pulse width 60–210 µs (ITP ~450); frequency ~100–140 Hz.<br>
+      <strong>Effects to chart per contact:</strong> mood ↑ (mirth/smile/euphoria — VC/VS hallmark) vs ↓ (acute sadness/tearfulness/anxiety); paresthesia; muscle contraction/dysarthria; autonomic (sweating, flushing, HR/BP); gaze/diplopia/oscillopsia (slMFB).<br>
+      <strong>Targets:</strong> SCC/Cg25, VC/VS, ALIC, NAcc, ITP, slMFB.
+      <span class="cite">Holtzheimer 2012; Dougherty RECLAIM 2015; FDA HDE H050003; Frizon PMC6050377; Haq/Greenberg/Okun.</span>`}
+};
+
+/* I-feel / distress cards (patient-facing) */
+const FEEL_CARDS=[
+  {e:'🛑',l:'Want to stop',u:1},{e:'😣',l:'In pain',u:1},
+  {e:'😰',l:'Scared',u:0},{e:'😟',l:'Anxious',u:0},
+  {e:'🤢',l:'Nauseous',u:0},{e:'😵‍💫',l:'Dizzy',u:0},
+  {e:'🌫️',l:'Feel unreal',u:0},{e:'🥶',l:'Cold',u:0},
+  {e:'😴',l:'Very sleepy',u:0},{e:'⏸️',l:'Need a break',u:0},
+  {e:'💧',l:'Thirsty',u:0},{e:'🙂',l:'I’m okay',u:0}
+];
+
+/* ============================================================
+   STORAGE — IndexedDB
+   ============================================================ */
+let db=null;
+function openDB(){return new Promise((res,rej)=>{const r=indexedDB.open('psychbridge',1);
+  r.onupgradeneeded=e=>{const d=e.target.result;if(!d.objectStoreNames.contains('patients'))d.createObjectStore('patients',{keyPath:'id'});if(!d.objectStoreNames.contains('sessions'))d.createObjectStore('sessions',{keyPath:'id'});if(!d.objectStoreNames.contains('kv'))d.createObjectStore('kv',{keyPath:'k'});};
+  r.onsuccess=e=>{db=e.target.result;res();};r.onerror=()=>rej(r.error);});}
+function tx(store,mode){return db.transaction(store,mode).objectStore(store);}
+function dbPut(store,val){return new Promise((res,rej)=>{const r=tx(store,'readwrite').put(val);r.onsuccess=()=>res(val);r.onerror=()=>rej(r.error);});}
+function dbGet(store,key){return new Promise((res,rej)=>{const r=tx(store,'readonly').get(key);r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error);});}
+function dbAll(store){return new Promise((res,rej)=>{const r=tx(store,'readonly').getAll();r.onsuccess=()=>res(r.result||[]);r.onerror=()=>rej(r.error);});}
+function dbDel(store,key){return new Promise((res,rej)=>{const r=tx(store,'readwrite').delete(key);r.onsuccess=()=>res();r.onerror=()=>rej(r.error);});}
+
+/* ============================================================
+   APP STATE
+   ============================================================ */
+const state={patient:null,session:null,proc:'ketamine',screen:'monitor',patients:[],sessions:[]};
+
+async function loadAll(){
+  state.patients=await dbAll('patients');
+  state.sessions=await dbAll('sessions');
+  const last=await dbGet('kv','lastPatient');
+  if(last&&last.v){state.patient=state.patients.find(p=>p.id===last.v)||null;}
+  if(!state.patient&&state.patients.length)state.patient=state.patients[0];
+}
+function patientSessions(){return state.sessions.filter(s=>state.patient&&s.patientId===state.patient.id).sort((a,b)=>new Date(b.datetime)-new Date(a.datetime));}
+async function saveSession(){if(state.session){state.session.updatedAt=nowISO();await dbPut('sessions',state.session);const i=state.sessions.findIndex(s=>s.id===state.session.id);if(i>=0)state.sessions[i]=state.session;else state.sessions.push(state.session);}}
+
+function ensureSession(){
+  if(!state.patient)return null;
+  // reuse today's session for this patient+proc if present, else create
+  let s=patientSessions().find(s=>s.proc===state.proc && new Date(s.datetime).toDateString()===new Date().toDateString());
+  if(!s){s={id:uid(),patientId:state.patient.id,proc:state.proc,datetime:nowISO(),params:{},vitals:[],contacts:[],checkins:[],scales:[],note:'',createdAt:nowISO()};state.sessions.push(s);}
+  state.session=s;return s;
+}
+
+/* ============================================================
+   RENDER — shell
+   ============================================================ */
+function renderPatientBar(){
+  const p=state.patient;
+  if(!p){$('#pavatar').textContent='—';$('#pname').textContent='No patient selected';$('#pmeta').innerHTML='Tap to choose or create a patient';return;}
+  const label=p.identified?(p.name||'Unnamed'):(p.code||'Anon');
+  $('#pavatar').textContent=(label[0]||'?').toUpperCase();
+  $('#pname').textContent=label;
+  const bits=[];
+  bits.push(p.identified?'<span class="phi-pill">PHI</span>':'<span class="deid-pill">De-identified</span>');
+  if(p.identified&&p.mrn)bits.push('MRN '+esc(p.mrn));
+  if(p.dx)bits.push(esc(p.dx));
+  const n=patientSessions().length; bits.push(n+' session'+(n!==1?'s':''));
+  $('#pmeta').innerHTML=bits.join(' · ');
+}
+
+function setProc(proc){state.proc=proc;$$('#modeSwitcher .mode-btn').forEach(b=>b.classList.toggle('active',b.dataset.proc===proc));ensureSession();render();}
+function setScreen(scr){state.screen=scr;$$('#tabBar .tab').forEach(t=>t.classList.toggle('active',t.dataset.screen===scr));$$('.screen').forEach(s=>s.classList.remove('active'));$('#screen-'+scr).classList.add('active');render();$('.screen-container').scrollTop=0;}
+
+function render(){
+  renderPatientBar();
+  if(!state.patient){renderNoPatient();return;}
+  ensureSession();
+  if(state.screen==='monitor')renderMonitor();
+  else if(state.screen==='checkin')renderCheckin();
+  else if(state.screen==='scales')renderScales();
+  else if(state.screen==='response')renderResponse();
+  else if(state.screen==='note')renderNote();
+}
+function renderNoPatient(){
+  const html=`<div class="empty"><div class="ee">👋</div><div class="et">Welcome to PsychBridge</div>
+    <div class="muted" style="max-width:300px;margin:0 auto var(--space-lg)">A bedside companion for interventional psychiatry — ECT, ketamine, TMS, and DBS. Monitor the patient, capture how they feel, and track treatment response over time.</div>
+    <button class="btn primary" style="max-width:240px;margin:0 auto" onclick="openPatientSheet()">＋ Add your first patient</button></div>`;
+  ['monitor','checkin','scales','response','note'].forEach(s=>$('#screen-'+s).innerHTML=html);
+}
+
+/* ---------- field helpers (bind to session.params) ---------- */
+function P(){return state.session.params;}
+function fNum(id,label,unit,hint,attrs=''){const v=P()[id]==null?'':P()[id];return `<div class="field"><label>${esc(label)} ${hint?`<span class="hint">${esc(hint)}</span>`:''}</label><div class="unit-wrap"><input class="inp ${unit?'with-unit':''}" type="number" inputmode="decimal" value="${esc(v)}" oninput="setParam('${id}',this.value)" ${attrs}>${unit?`<span class="unit">${esc(unit)}</span>`:''}</div></div>`;}
+function fText(id,label,ph){const v=P()[id]==null?'':P()[id];return `<div class="field"><label>${esc(label)}</label><input class="inp" value="${esc(v)}" placeholder="${esc(ph||'')}" oninput="setParam('${id}',this.value)"></div>`;}
+function fSelect(id,label,opts){const v=P()[id]||'';return `<div class="field"><label>${esc(label)}</label><select class="inp" onchange="setParam('${id}',this.value)">${['',...opts].map(o=>`<option value="${esc(o)}" ${o===v?'selected':''}>${o?esc(o):'— select —'}</option>`).join('')}</select></div>`;}
+function fSeg(id,label,opts,hint){const v=P()[id];return `<div class="field"><label>${esc(label)} ${hint?`<span class="hint">${esc(hint)}</span>`:''}</label><div class="seg">${opts.map(o=>`<button class="${String(v)===String(o.v)?'on':''}" onclick="setParam('${id}','${o.v}');render()">${esc(o.l)}</button>`).join('')}</div></div>`;}
+function setParam(id,v){P()[id]=v;saveSession();}
+
+function refAccordion(proc){const pr=PROCEDURES[proc];return `<div class="card"><div class="ref-toggle" onclick="this.nextElementSibling.classList.toggle('open');this.querySelector('.rc').textContent=this.nextElementSibling.classList.contains('open')?'▲':'▼'">📖 Clinical reference &amp; safety <span class="rc">▼</span></div><div class="ref-body">${pr.reference}</div></div>`;}
+function regBadge(proc){const r=PROCEDURES[proc].reg;return `<div class="flag ${r.tone==='ok'?'ok':r.tone==='warn'?'warn':'info'}"><span class="fi">${r.tone==='warn'?'⚠️':'ℹ️'}</span><div>${esc(r.label)}</div></div>`;}
+
+/* ============================================================
+   MONITOR — procedure-adaptive
+   ============================================================ */
+function renderMonitor(){
+  const pr=PROCEDURES[state.proc];
+  let h=`<h2>${pr.icon} ${esc(pr.name)}</h2><div class="subtitle">Session · ${fmtDT(state.session.datetime)}</div>`;
+  h+=regBadge(state.proc);
+  if(state.proc==='ketamine')h+=monKetamine();
+  else if(state.proc==='ect')h+=monECT();
+  else if(state.proc==='tms')h+=monTMS();
+  else if(state.proc==='dbs')h+=monDBS();
+  h+=refAccordion(state.proc);
+  h+=`<div class="disclaimer">PsychBridge is a prototype — not a validated medical device, EHR, or clinical decision tool. Verify every value before charting.</div>`;
+  h+=`<div class="footer-credit">created by <a href="https://github.com/dkawjr" target="_blank" rel="noopener">D. K. Adrian Williams</a></div>`;
+  $('#screen-monitor').innerHTML=h;
+}
+
+/* ---- Ketamine ---- */
+function monKetamine(){
+  let h=`<div class="section-label">Dose</div><div class="card">
+    ${fSelect('agent','Agent',['IV ketamine','Esketamine (Spravato)'])}
+    <div class="row">${fNum('dose','Dose','mg or mg/kg','')}${fNum('rate','Infusion','min','over')}</div>
+    ${fSelect('route','Route',['IV infusion','Intranasal','IM','SC'])}
+  </div>`;
+  // BP baseline + flag
+  h+=`<div class="section-label">Vital-sign timepoints</div>`;
+  const base=state.session.vitals.find(v=>v.tp==='Baseline');
+  h+=`<div class="card"><div class="muted" style="margin-bottom:8px">Log BP/HR/SpO₂ + sedation/dissociation at each timepoint. Spravato REMS: baseline, ~40 min (Cmax), then through ≥2 h.</div>
+    <div class="row" style="margin-bottom:8px">
+      <button class="btn sm" onclick="addVital('Baseline')">＋ Baseline</button>
+      <button class="btn sm" onclick="addVital('40 min')">＋ 40 min</button>
+      <button class="btn sm" onclick="addVital('Custom')">＋ Timepoint</button>
+    </div>`;
+  if(!state.session.vitals.length)h+=`<div class="muted">No timepoints logged yet.</div>`;
+  state.session.vitals.slice().reverse().forEach(v=>{
+    const flags=ketBPflags(v,base);
+    h+=`<div style="padding:10px 0;border-top:1px solid var(--border)">
+      <div style="display:flex;justify-content:space-between;align-items:center"><strong>${esc(v.tp)}</strong><span class="muted">${fmtTime(v.time)} <span onclick="delVital('${v.id}')" style="color:var(--danger);cursor:pointer;margin-left:8px">✕</span></span></div>
+      <div class="muted" style="margin-top:3px">BP ${v.sbp||'–'}/${v.dbp||'–'} · HR ${v.hr||'–'} · SpO₂ ${v.spo2||'–'}% · RASS ${v.rass??'–'} · MOAA-S ${v.moaas??'–'}</div>
+      ${flags.map(f=>`<div class="flag ${f.t}" style="margin-top:6px"><span class="fi">⚠️</span><div>${f.m}</div></div>`).join('')}
+    </div>`;
+  });
+  h+=`</div>`;
+  h+=`<div class="card"><div class="ref-toggle" onclick="setScreen('scales')">🌫️ Track dissociation with CADSS ›</div></div>`;
+  return h;
+}
+function ketBPflags(v,base){const f=[];const sbp=+v.sbp,dbp=+v.dbp;
+  if(sbp>=180)f.push({t:'danger',m:`<strong>SBP ≥180</strong> — hypertensive range; manage per protocol.`});
+  if(dbp>=110)f.push({t:'danger',m:`<strong>DBP ≥110</strong> — hypertensive range; manage per protocol.`});
+  if(base&&base.sbp&&sbp&&sbp-(+base.sbp)>=40)f.push({t:'warn',m:`SBP rose ≥40 from baseline (${base.sbp}→${v.sbp}).`});
+  if(base&&base.dbp&&dbp&&dbp-(+base.dbp)>=25)f.push({t:'warn',m:`DBP rose ≥25 from baseline (${base.dbp}→${v.dbp}).`});
+  if(v.spo2&&+v.spo2<92)f.push({t:'danger',m:`SpO₂ ${v.spo2}% — monitor respiratory status.`});
+  return f;}
+
+/* ---- ECT ---- */
+function monECT(){
+  let h=`<div class="section-label">Stimulus</div><div class="card">
+    ${fSelect('placement','Electrode placement',['Right unilateral (RUL)','Bitemporal','Bifrontal'])}
+    <div class="row">${fNum('charge','Charge','mC','')}${fNum('pct','Energy','%','')}</div>
+    <div class="row">${fNum('pw','Pulse width','ms','')}${fNum('multiple','× seizure threshold','×','')}</div>
+  </div>
+  <div class="section-label">Anesthesia</div><div class="card">
+    ${fSelect('induction','Induction agent',['Methohexital','Etomidate','Propofol','Ketamine','Thiopental'])}
+    ${fNum('inddose','Induction dose','mg/kg','')}
+    ${fSelect('nmb','Muscle relaxant',['Succinylcholine','Rocuronium'])}
+  </div>
+  <div class="section-label">Seizure</div><div class="card">
+    <div class="row">${fNum('motor','Motor (cuff)','s','')}${fNum('eeg','EEG seizure','s','')}</div>`;
+  const eeg=+P().eeg,motor=+P().motor;
+  if(eeg||motor){
+    if(eeg&&eeg>180)h+=`<div class="flag danger"><span class="fi">⚠️</span><div><strong>EEG &gt;180 s</strong> — prolonged seizure / status; terminate per protocol.</div></div>`;
+    else if(eeg&&eeg>120)h+=`<div class="flag warn"><span class="fi">⚠️</span><div>EEG &gt;120 s — consider terminating.</div></div>`;
+    else if(eeg&&eeg<20)h+=`<div class="flag warn"><span class="fi">ℹ️</span><div>EEG &lt;20 s — may be subtherapeutic; weigh re-stimulation / dosing.</div></div>`;
+    else if(eeg)h+=`<div class="flag ok"><span class="fi">✓</span><div>EEG duration within the usual adequate range. Weigh seizure quality, not duration alone.</div></div>`;
+  }
+  h+=`${fSeg('psi','Postictal suppression',[{v:'Good',l:'Good'},{v:'Moderate',l:'Moderate'},{v:'Poor',l:'Poor'}],'(strongest quality marker)')}
+    ${fText('ictal','Ictal quality notes','amplitude, coherence, peak HR…')}
+  </div>
+  <div class="section-label">Recovery (cognitive)</div><div class="card">
+    ${fNum('rot','Reorientation time','min','')}`;
+  const rot=+P().rot;
+  if(rot&&rot>30)h+=`<div class="flag warn"><span class="fi">⚠️</span><div>Reorientation &gt;30 min — red flag for retrograde memory effects; track across the course.</div></div>`;
+  h+=`${fSeg('confusion','Post-ictal confusion',[{v:'None',l:'None'},{v:'Mild',l:'Mild'},{v:'Marked',l:'Marked'}])}
+    ${fSeg('memory','Subjective memory complaint',[{v:'None',l:'None'},{v:'Some',l:'Some'},{v:'Marked',l:'Marked'}])}
+  </div>`;
+  return h;
+}
+
+/* ---- TMS ---- */
+function monTMS(){
+  let h=`<div class="section-label">Motor threshold</div><div class="card">
+    <div class="row">${fNum('rmt','Resting MT','%MSO','')}${fNum('intensity','Intensity','% MT','')}</div>
+    ${fSeg('rmtmethod','RMT method',[{v:'EMG',l:'EMG (≥50µV, 5/10)'},{v:'Visual',l:'Visual twitch'}],'')}`;
+  if(P().intensity&&+P().intensity>120)h+=`<div class="flag warn"><span class="fi">⚠️</span><div>Intensity &gt;120% MT exceeds the standard treatment range — verify protocol &amp; safety limits.</div></div>`;
+  h+=`</div>
+  <div class="section-label">Protocol</div><div class="card">
+    ${fSelect('protocol','Protocol',['10 Hz L-DLPFC','iTBS (theta burst)','SAINT / accelerated','18 Hz Deep TMS (H1)','1 Hz (right, LF)'])}
+    ${fSelect('target','Target / localization',['L-DLPFC — 5 cm rule','L-DLPFC — Beam F3','L-DLPFC — neuronavigation','fMRI-guided (SCC-anticorrelated)','Right DLPFC'])}
+    <div class="row">${fNum('pulses','Pulses / session','','')}${fNum('sessno','Session #','','of course')}</div>
+  </div>
+  <div class="section-label">Tolerability</div><div class="card">
+    ${fSeg('scalp','Scalp pain / discomfort',[{v:'0',l:'0'},{v:'2',l:'2'},{v:'4',l:'4'},{v:'6',l:'6'},{v:'8',l:'8'},{v:'10',l:'10'}],'0–10')}
+    ${fSeg('headache','Headache',[{v:'None',l:'None'},{v:'Mild',l:'Mild'},{v:'Mod',l:'Mod'}])}
+    ${fSeg('safety','Safety events',[{v:'None',l:'None'},{v:'Vasovagal',l:'Vasovagal'},{v:'Hypomania',l:'Hypomania'},{v:'Seizure',l:'Seizure'}])}`;
+  if(P().safety==='Seizure')h+=`<div class="flag danger"><span class="fi">⚠️</span><div>Seizure flagged — follow emergency protocol; rare but serious AE.</div></div>`;
+  h+=`<div class="flag info"><span class="fi">🔇</span><div>Confirm hearing protection and no incompatible implants/hardware near the coil.</div></div></div>`;
+  return h;
+}
+
+/* ---- DBS ---- */
+function monDBS(){
+  let h=`<div class="section-label">Setup</div><div class="card">
+    ${fSelect('target','Target',['SCC / Cg25 (subgenual)','VC/VS (ventral capsule/striatum)','ALIC','NAcc','slMFB','ITP','Anteromedial STN'])}
+    ${fSeg('side',' Hemisphere',[{v:'Left',l:'Left'},{v:'Right',l:'Right'},{v:'Bilateral',l:'Bilateral'}])}
+    ${fSeg('config','Configuration',[{v:'Monopolar',l:'Monopolar'},{v:'Bipolar',l:'Bipolar'}])}
+  </div>
+  <div class="section-label">Per-contact therapeutic-window mapping</div>
+  <div class="card"><div class="muted" style="margin-bottom:8px">Step through each contact; log acute benefit vs side-effect thresholds.</div>
+    <button class="btn sm" onclick="addContact()">＋ Log a contact test</button>`;
+  if(!state.session.contacts.length)h+=`<div class="muted" style="margin-top:8px">No contacts tested yet.</div>`;
+  state.session.contacts.slice().reverse().forEach(c=>{
+    h+=`<div style="padding:10px 0;border-top:1px solid var(--border)">
+      <div style="display:flex;justify-content:space-between"><strong>Contact ${esc(c.contact||'?')}</strong><span class="muted">${fmtTime(c.time)} <span onclick="delContact('${c.id}')" style="color:var(--danger);cursor:pointer;margin-left:8px">✕</span></span></div>
+      <div class="muted" style="margin-top:3px">${esc(c.amp||'–')} ${esc(c.ampUnit||'')} · ${c.pw||'–'} µs · ${c.freq||'–'} Hz</div>
+      ${c.benefit?`<div class="flag ok" style="margin-top:6px"><span class="fi">✓</span><div>Benefit: ${esc(c.benefit)}</div></div>`:''}
+      ${(c.effects&&c.effects.length)?`<div class="flag warn" style="margin-top:6px"><span class="fi">⚠️</span><div>Side effects: ${c.effects.map(esc).join(', ')}</div></div>`:''}
+    </div>`;
+  });
+  h+=`</div>`;
+  return h;
+}
+
+/* ============================================================
+   CHECK-IN — distress + I-feel cards
+   ============================================================ */
+let pendingFeel=new Set();let pendingDistress=5;
+function renderCheckin(){
+  let h=`<h2>💬 How are you feeling?</h2><div class="subtitle">For the patient — tap anything that fits. Big buttons for when it's hard to talk.</div>`;
+  h+=`<div class="section-label">Distress right now</div><div class="card"><div class="distress">
+    <div class="distress-val" id="distressVal">${pendingDistress}</div>
+    <input type="range" min="0" max="10" value="${pendingDistress}" oninput="pendingDistress=+this.value;document.getElementById('distressVal').textContent=this.value">
+    <div class="distress-scale"><span>0 · calm</span><span>5</span><span>10 · worst</span></div>
+  </div></div>`;
+  h+=`<div class="section-label">I feel…</div><div class="feel-grid">`;
+  FEEL_CARDS.forEach((c,i)=>{h+=`<div class="feel-card ${c.u?'urgent':''} ${pendingFeel.has(c.l)?'sel':''}" onclick="toggleFeel('${c.l.replace(/'/g,"\\'")}',this)"><span class="fe">${c.e}</span><span class="fl">${esc(c.l)}</span></div>`;});
+  h+=`</div>`;
+  h+=`<div class="field" style="margin-top:16px"><label>Note (optional)</label><textarea class="inp" id="checkinNote" placeholder="Anything the patient or team wants noted…"></textarea></div>`;
+  h+=`<button class="btn primary" onclick="logCheckin()">Log check-in</button>`;
+  if(state.session.checkins.length){
+    h+=`<div class="section-label">Earlier today</div><div class="card flush">`;
+    state.session.checkins.slice().reverse().forEach(c=>{h+=`<div style="padding:12px 16px;border-bottom:1px solid var(--border)"><div style="display:flex;justify-content:space-between"><strong>Distress ${c.distress}/10</strong><span class="muted">${fmtTime(c.time)}</span></div>${c.feelings.length?`<div class="muted" style="margin-top:3px">${c.feelings.map(esc).join(' · ')}</div>`:''}${c.note?`<div style="margin-top:4px;font-size:13px">${esc(c.note)}</div>`:''}</div>`;});
+    h+=`</div>`;
+  }
+  $('#screen-checkin').innerHTML=h;
+}
+function toggleFeel(l,node){if(pendingFeel.has(l)){pendingFeel.delete(l);node.classList.remove('sel');}else{pendingFeel.add(l);node.classList.add('sel');}}
+async function logCheckin(){
+  const note=$('#checkinNote')?$('#checkinNote').value.trim():'';
+  state.session.checkins.push({time:nowISO(),distress:pendingDistress,feelings:[...pendingFeel],note});
+  await saveSession();
+  const urgent=[...pendingFeel].some(l=>FEEL_CARDS.find(c=>c.l===l&&c.u))||pendingDistress>=8;
+  pendingFeel.clear();pendingDistress=5;renderCheckin();
+  toast(urgent?'Logged — high distress flagged ⚠️':'Check-in logged ✓');
+}
+
+/* ============================================================
+   SCALES
+   ============================================================ */
+function lastScaleResult(id){const all=[];state.sessions.filter(s=>state.patient&&s.patientId===state.patient.id).forEach(s=>s.scales.forEach(r=>{if(r.scaleId===id)all.push(r);}));all.sort((a,b)=>new Date(b.time)-new Date(a.time));return all[0];}
+function renderScales(){
+  let h=`<h2>📋 Rating scales</h2><div class="subtitle">Validated instruments — administer and track across visits.</div>`;
+  // suggested for current proc
+  const sugg={ketamine:['cadss','madrs','phq9'],ect:['madrs','phq9'],tms:['phq9','madrs','qids'],dbs:['madrs','phq9']}[state.proc]||[];
+  h+=`<div class="section-label">Suggested for ${esc(PROCEDURES[state.proc].name)}</div><div class="card flush">`;
+  sugg.forEach(id=>h+=scaleRow(id));
+  h+=`</div><div class="section-label">All instruments</div><div class="card flush">`;
+  SCALE_ORDER.filter(id=>!sugg.includes(id)).forEach(id=>h+=scaleRow(id));
+  h+=`</div>`;
+  h+=`<div class="disclaimer">⚠️ C-SSRS and CADSS/MADRS carry copyright/permission terms — see each scale's citation. This prototype reproduces items for development; clearance is required before clinical/commercial deployment.</div>`;
+  $('#screen-scales').innerHTML=h;
+}
+function scaleRow(id){const sc=SCALES[id];const last=lastScaleResult(id);
+  let right='';
+  if(last){if(id==='cssrs')right=`<div class="slast" style="color:var(--${last.risk==='HIGH'?'danger':last.risk==='MODERATE'?'warning':'success'})">${last.risk}</div>`;
+    else right=`<div class="slast">${last.score}<span class="muted" style="font-weight:400">/${sc.max}</span></div>`;}
+  return `<div class="scale-item" onclick="openScale('${id}')"><div class="sic">${esc(sc.abbr).replace(/\n/g,'<br>')}</div><div class="sinfo"><div class="sname">${esc(sc.name)}</div><div class="sdesc">${esc(sc.full)}</div></div>${right}<span class="chev" style="color:var(--text-tertiary)">›</span></div>`;
+}
+
+/* ---- scale administration (modal) ---- */
+let curScale=null,curAnswers=[];
+function openScale(id){
+  curScale=SCALES[id];curAnswers=[];
+  if(id==='cssrs'){openCSSRS();return;}
+  let body=`<div class="flag info"><span class="fi">📋</span><div>${esc(curScale.leadIn)}</div></div>`;
+  curScale.items.forEach((it,i)=>{
+    const text=typeof it==='string'?it:it.t;
+    let opts;
+    if(curScale.anchorScale){ // MADRS 0..6 with anchors at evens
+      const a=it.o;body+=`<div class="q" id="q${i}"><div class="qn">ITEM ${i+1}</div><div class="qt">${esc(text)}</div><div class="seg">`;
+      for(let v=0;v<=6;v++)body+=`<button onclick="answer(${i},${v},this)">${v}</button>`;
+      body+=`</div><div class="muted" style="margin-top:8px;line-height:1.5">`+[0,2,4,6].map(v=>`<strong>${v}</strong> ${esc(a[v])}`).join('<br>')+`</div></div>`;
+    } else if(typeof it!=='string'&&it.o){ // QIDS per-item options
+      body+=`<div class="q" id="q${i}"><div class="qn">ITEM ${i+1}</div><div class="qt">${esc(text)}</div>`;
+      it.o.forEach((ol,v)=>body+=`<div class="opt" onclick="answer(${i},${v},this)"><span class="ov">${v}</span><span>${esc(ol)}</span></div>`);
+      body+=`</div>`;
+    } else { // shared likert
+      body+=`<div class="q" id="q${i}"><div class="qn">ITEM ${i+1}</div><div class="qt">${esc(text)}</div>`;
+      curScale.options.forEach(o=>body+=`<div class="opt" onclick="answer(${i},${o.v},this)"><span class="ov">${o.v}</span><span>${esc(o.l)}</span></div>`);
+      body+=`</div>`;
+    }
+  });
+  openSheet(curScale.name,curScale.full,body,`<button class="btn ghost" onclick="closeSheet()">Cancel</button><button class="btn primary" id="scaleScoreBtn" onclick="scoreScale()">Score</button>`);
+}
+function answer(i,v,node){curAnswers[i]=v;const q=node.closest('.q');
+  if(node.classList.contains('opt')){$$('.opt',q).forEach(o=>o.classList.remove('on'));node.classList.add('on');}
+  else{$$('.seg button',q).forEach(b=>b.classList.remove('on'));node.classList.add('on');}
+}
+async function scoreScale(){
+  const n=curScale.items.length;for(let i=0;i<n;i++)if(curAnswers[i]==null){toast('Item '+(i+1)+' not answered');document.getElementById('q'+i).scrollIntoView({behavior:'smooth',block:'center'});return;}
+  const score=curScale.score(curAnswers);const[sev,tone]=curScale.severity(score);
+  const safety=curScale.safety?curScale.safety(curAnswers):null;
+  const rec={scaleId:curScale.id,time:nowISO(),answers:[...curAnswers],score,severity:sev};
+  state.session.scales.push(rec);await saveSession();
+  // result view
+  let body=`<div class="result-banner" style="background:var(--${tone==='danger'?'danger':tone==='warn'?'warning':tone==='info'?'primary':'success'}-light)">
+    <div class="rb-score">${score}<span class="rb-max">/${curScale.max}</span></div>
+    <div class="rb-sev" style="color:var(--${tone==='danger'?'danger':tone==='warn'?'warning':tone==='info'?'primary':'success'})">${esc(sev)}</div></div>`;
+  if(curScale.subscales){const ss=curScale.subscales(curAnswers);body+=`<div class="card"><div class="section-label" style="margin-top:0">Subscales</div>`+Object.entries(ss).map(([k,v])=>`<div style="display:flex;justify-content:space-between;padding:4px 0"><span>${esc(k)}</span><strong>${v}</strong></div>`).join('')+`</div>`;}
+  if(safety)body+=`<div class="flag danger"><span class="fi">🚨</span><div><strong>Safety flag.</strong> ${esc(safety.msg)}</div></div>`;
+  const prev=patientPrevScore(curScale.id,rec.time);
+  if(prev!=null){const delta=score-prev;const resp=curScale.responder&&curScale.responder(prev,score);const rem=curScale.remission&&curScale.remission(score);
+    body+=`<div class="flag ${delta<0?'ok':delta>0?'warn':'info'}"><span class="fi">📈</span><div>Change from previous (${prev}): <strong>${delta>0?'+':''}${delta}</strong>${resp?' · <strong>Response</strong> (≥50% reduction)':''}${rem?' · <strong>Remission</strong>':''}</div></div>`;}
+  if(curScale.note)body+=`<div class="muted" style="margin-top:8px">ℹ️ ${esc(curScale.note)}</div>`;
+  body+=`<div class="muted" style="margin-top:10px">${esc(curScale.cite)}</div>`;
+  openSheet(curScale.name+' — result','Saved to this session',body,`<button class="btn ghost" onclick="closeSheet()">Done</button><button class="btn primary" onclick="closeSheet();setScreen('response')">View trajectory</button>`);
+  toast('Scored ✓');
+}
+function patientPrevScore(id,beforeTime){const all=[];state.sessions.filter(s=>s.patientId===state.patient.id).forEach(s=>s.scales.forEach(r=>{if(r.scaleId===id&&new Date(r.time)<new Date(beforeTime))all.push(r);}));all.sort((a,b)=>new Date(b.time)-new Date(a.time));return all.length?all[0].score:null;}
+
+/* ---- C-SSRS special ---- */
+let cssrsAns={};
+function openCSSRS(){
+  cssrsAns={};
+  const Q=[
+    {n:1,t:'Wish to be dead',q:'Have you wished you were dead or wished you could go to sleep and not wake up?'},
+    {n:2,t:'Suicidal thoughts',q:'Have you actually had any thoughts of killing yourself?'},
+    {n:3,t:'Thoughts with method (no plan/intent)',q:'Have you been thinking about how you might kill yourself?',dep:2},
+    {n:4,t:'Some intent (no plan)',q:'Have you had these thoughts and had some intention of acting on them?',dep:2},
+    {n:5,t:'Plan & intent',q:'Have you started to work out or worked out the details of how to kill yourself? Do you intend to carry out this plan?',dep:2},
+    {n:6,t:'Suicidal behavior (lifetime)',q:'Have you ever done anything, started to do anything, or prepared to do anything to end your life?'}
+  ];
+  let body=`<div class="flag info"><span class="fi">📋</span><div>${esc(SCALES.cssrs.leadIn)} Ideation questions cover the <strong>past month</strong>.</div></div>`;
+  Q.forEach(item=>{body+=`<div class="q" id="cq${item.n}" data-dep="${item.dep||''}"><div class="qn">QUESTION ${item.n}</div><div class="qt">${esc(item.t)}</div><div class="muted" style="margin-bottom:8px">${esc(item.q)}</div>
+    <div class="seg yn"><button onclick="cssrsSet(${item.n},'no',this)">No</button><button onclick="cssrsSet(${item.n},'yes',this)">Yes</button></div>
+    ${item.n===6?`<div id="cq6r" style="display:none;margin-top:10px"><label style="font-size:12px;font-weight:600;color:var(--text-secondary)">If yes — most recent:</label><div class="seg" style="margin-top:5px"><button onclick="cssrsRecency('over1y',this)">Over a year ago</button><button onclick="cssrsRecency('3mo1y',this)">3 mo–1 yr</button><button onclick="cssrsRecency('le3mo',this)">≤3 months</button></div></div>`:''}
+  </div>`;});
+  openSheet('C-SSRS Screener','Triage = highest-numbered "Yes"',body,`<button class="btn ghost" onclick="closeSheet()">Cancel</button><button class="btn primary" onclick="scoreCSSRS()">Assess</button>`);
+  updateCSSRSVis();
+}
+function cssrsSet(n,val,node){cssrsAns[n]=val;$$('.seg.yn button',node.closest('.q')).forEach(b=>b.classList.remove('on','yes','no'));node.classList.add('on',val);if(n===6)$('#cq6r').style.display=val==='yes'?'block':'none';updateCSSRSVis();}
+function cssrsRecency(r,node){cssrsAns.recency=r;$$('.seg button',node.parentElement).forEach(b=>b.classList.remove('on'));node.classList.add('on');}
+function updateCSSRSVis(){[3,4,5].forEach(n=>{const e=$('#cq'+n);if(e)e.style.opacity=cssrsAns[2]==='yes'?'1':'.4';});}
+async function scoreCSSRS(){
+  if(!cssrsAns[1]||!cssrsAns[2]||!cssrsAns[6]){toast('Answer Q1, Q2 and Q6');return;}
+  let highest=0;[1,2].forEach(n=>{if(cssrsAns[n]==='yes')highest=n;});
+  if(cssrsAns[2]==='yes')[3,4,5].forEach(n=>{if(cssrsAns[n]==='yes')highest=n;});
+  let risk='LOW',action='Mental/behavioral health referral at discharge.';
+  if(highest>=4){risk='HIGH';action='Psychiatric consultation + patient safety precautions.';}
+  else if(highest===3){risk='MODERATE';action='Care-team consult (psychiatric nurse) + consider safety monitoring.';}
+  // behavior overrides
+  if(cssrsAns[6]==='yes'){const r=cssrsAns.recency;if(r==='le3mo'){risk='HIGH';action='Recent suicidal behavior (≤3 mo) — psychiatric consultation + patient safety precautions.';}
+    else if(r==='3mo1y'&&risk!=='HIGH'){risk='MODERATE';action='Suicidal behavior in past year — care-team consult + safety monitoring.';}
+    else if(risk==='LOW'){risk='MODERATE';action='Lifetime suicidal behavior — care-team consult; consider safety monitoring.';}}
+  const tone=risk==='HIGH'?'danger':risk==='MODERATE'?'warning':'success';
+  const rec={scaleId:'cssrs',time:nowISO(),answers:{...cssrsAns},risk,highest};
+  state.session.scales.push(rec);await saveSession();
+  let body=`<div class="result-banner" style="background:var(--${tone}-light)"><div class="rb-sev" style="color:var(--${tone});font-size:28px;font-weight:800">${risk} RISK</div><div class="muted" style="margin-top:6px">Highest endorsed: Q${highest||'—'}${cssrsAns[6]==='yes'?' + behavior':''}</div></div>`;
+  body+=`<div class="flag ${tone==='danger'?'danger':tone==='warning'?'warn':'ok'}"><span class="fi">${tone==='danger'?'🚨':'➡️'}</span><div><strong>Suggested response protocol:</strong> ${esc(action)}</div></div>`;
+  body+=`<div class="muted" style="margin-top:10px">${esc(SCALES.cssrs.cite)} This is decision-support, not a substitute for clinical judgment.</div>`;
+  openSheet('C-SSRS — result','Saved to this session',body,`<button class="btn primary" onclick="closeSheet()">Done</button>`);
+  toast(risk+' risk');
+}
+
+/* ============================================================
+   RESPONSE — trajectory + timeline
+   ============================================================ */
+function renderResponse(){
+  let h=`<h2>📈 Treatment response</h2><div class="subtitle">Scale trajectory across the course of treatment.</div>`;
+  const series=buildSeries();
+  const tracked=Object.keys(series).filter(id=>series[id].length>=1);
+  if(!tracked.length){h+=`<div class="empty"><div class="ee">📈</div><div class="et">No scale data yet</div><div class="muted">Administer a scale (e.g. MADRS or PHQ-9) over several visits to see the response curve here.</div><button class="btn primary" style="max-width:220px;margin:16px auto 0" onclick="setScreen('scales')">Go to scales</button></div>`;$('#screen-response').innerHTML=h;return;}
+  // primary trajectory chart for depression scales
+  ['madrs','phq9','qids','gad7'].filter(id=>series[id]&&series[id].length).forEach(id=>{h+=chartCard(id,series[id]);});
+  // CADSS mini
+  if(series.cadss&&series.cadss.length)h+=chartCard('cadss',series.cadss);
+  // C-SSRS history
+  const cs=series.cssrs;
+  if(cs&&cs.length){h+=`<div class="section-label">C-SSRS history</div><div class="card flush">`;cs.slice().reverse().forEach(p=>{const tone=p.risk==='HIGH'?'danger':p.risk==='MODERATE'?'warning':'success';h+=`<div style="display:flex;justify-content:space-between;padding:10px 16px;border-bottom:1px solid var(--border)"><span class="muted">${fmtDT(p.time)}</span><strong style="color:var(--${tone})">${p.risk}</strong></div>`;});h+=`</div>`;}
+  $('#screen-response').innerHTML=h;
+}
+function buildSeries(){const out={};state.sessions.filter(s=>s.patientId===state.patient.id).forEach(s=>s.scales.forEach(r=>{(out[r.scaleId]=out[r.scaleId]||[]).push(r);}));Object.values(out).forEach(a=>a.sort((x,y)=>new Date(x.time)-new Date(y.time)));return out;}
+function chartCard(id,pts){const sc=SCALES[id];const base=pts[0].score,cur=pts[pts.length-1].score;
+  const resp=sc.responder&&sc.responder(base,cur),rem=sc.remission&&sc.remission(cur);
+  let h=`<div class="section-label">${esc(sc.name)} — ${esc(sc.full)}</div><div class="card"><div class="chart-wrap">${svgChart(id,pts)}</div>`;
+  h+=`<div class="chart-legend"><span><span class="dot" style="background:var(--primary)"></span>${esc(sc.name)} score</span>`;
+  if(sc.remission)h+=`<span><span class="dot" style="background:var(--success)"></span>remission ≤${id==='madrs'?10:id==='qids'?5:5}</span>`;
+  h+=`</div>`;
+  h+=`<div style="display:flex;gap:8px;padding:0 8px 4px">`;
+  h+=`<div class="flag ${resp?'ok':'info'}" style="flex:1;margin:0"><span class="fi">${resp?'✓':'•'}</span><div>Baseline ${base} → now ${cur}${resp?'<br><strong>Responder</strong> (≥50% ↓)':''}</div></div>`;
+  if(rem)h+=`<div class="flag ok" style="flex:1;margin:0"><span class="fi">✓</span><div><strong>Remission</strong> range</div></div>`;
+  h+=`</div></div>`;
+  return h;
+}
+function svgChart(id,pts){const sc=SCALES[id];const W=400,H=160,pad=28;const max=sc.max;
+  const n=pts.length;const xs=i=>n<=1?W/2:pad+(W-2*pad)*i/(n-1);const ys=v=>H-pad-(H-2*pad)*v/max;
+  let g='';
+  // remission band
+  const remVal=id==='madrs'?10:id==='qids'?5:id==='phq9'?5:id==='gad7'?5:null;
+  if(remVal!=null){const y=ys(remVal);g+=`<rect x="0" y="${y}" width="${W}" height="${H-pad-y}" fill="var(--success)" opacity="0.07"/><line x1="0" y1="${y}" x2="${W}" y2="${y}" stroke="var(--success)" stroke-width="1" stroke-dasharray="4 4" opacity="0.6"/>`;}
+  // axis
+  g+=`<line x1="${pad}" y1="${H-pad}" x2="${W}" y2="${H-pad}" stroke="var(--border)" stroke-width="1"/>`;
+  // path
+  if(n>1){let d='';pts.forEach((p,i)=>{d+=(i?'L':'M')+xs(i)+' '+ys(p.score)+' ';});g+=`<path d="${d}" fill="none" stroke="var(--primary)" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>`;}
+  pts.forEach((p,i)=>{const inRem=sc.remission&&sc.remission(p.score);g+=`<circle cx="${xs(i)}" cy="${ys(p.score)}" r="4.5" fill="${inRem?'var(--success)':'var(--primary)'}" stroke="var(--bg-elevated)" stroke-width="2"/><text x="${xs(i)}" y="${ys(p.score)-10}" text-anchor="middle" font-size="11" font-weight="700" fill="var(--text-primary)">${p.score}</text><text x="${xs(i)}" y="${H-pad+14}" text-anchor="middle" font-size="9" fill="var(--text-tertiary)">${fmtDate(p.time)}</text>`;});
+  g+=`<text x="2" y="${ys(max)+4}" font-size="9" fill="var(--text-tertiary)">${max}</text><text x="2" y="${H-pad}" font-size="9" fill="var(--text-tertiary)">0</text>`;
+  return `<svg viewBox="0 0 ${W} ${H}" width="100%" preserveAspectRatio="xMidYMid meet" style="display:block">${g}</svg>`;
+}
+
+/* ============================================================
+   NOTE generator
+   ============================================================ */
+function renderNote(){
+  const txt=buildNote();
+  let h=`<h2>📝 Session note</h2><div class="subtitle">Auto-generated from this session — edit, copy, or download.</div>`;
+  h+=`<div class="row" style="margin-bottom:12px"><button class="btn sm" onclick="copyNote()">📋 Copy</button><button class="btn sm" onclick="downloadNote()">⬇ Download</button><button class="btn sm" onclick="state.session.note='';renderNote()">↻ Regenerate</button></div>`;
+  h+=`<div class="card"><textarea class="inp note-output" id="noteArea" style="min-height:420px" oninput="state.session.note=this.value;saveSession()">${esc(txt)}</textarea></div>`;
+  h+=`<div class="disclaimer">Prototype documentation aid. Not a legal medical record. Verify all values before entering into the chart.</div>`;
+  $('#screen-note').innerHTML=h;
+}
+function buildNote(){
+  if(state.session.note)return state.session.note;
+  const p=state.patient,s=state.session,pr=PROCEDURES[s.proc];
+  const L=[];
+  L.push('INTERVENTIONAL PSYCHIATRY — SESSION NOTE');
+  L.push('='.repeat(44));
+  L.push('Patient: '+(p.identified?(p.name||'—')+(p.mrn?' (MRN '+p.mrn+')':''):'De-identified '+(p.code||'')));
+  if(p.dx)L.push('Diagnosis: '+p.dx);
+  L.push('Procedure: '+pr.name);
+  L.push('Date/time: '+fmtDT(s.datetime));
+  L.push('');
+  // params
+  const pk=Object.entries(s.params).filter(([k,v])=>v!=='');
+  if(pk.length){L.push('PARAMETERS');pk.forEach(([k,v])=>L.push('  • '+labelFor(k)+': '+v));L.push('');}
+  // ketamine vitals
+  if(s.vitals.length){L.push('VITAL-SIGN TIMEPOINTS');s.vitals.forEach(v=>L.push('  • '+v.tp+' ('+fmtTime(v.time)+'): BP '+(v.sbp||'–')+'/'+(v.dbp||'–')+', HR '+(v.hr||'–')+', SpO2 '+(v.spo2||'–')+'%, RASS '+(v.rass??'–')+', MOAA-S '+(v.moaas??'–')));L.push('');}
+  // dbs contacts
+  if(s.contacts.length){L.push('PER-CONTACT MAPPING');s.contacts.forEach(c=>L.push('  • Contact '+(c.contact||'?')+': '+(c.amp||'–')+' '+(c.ampUnit||'')+', '+(c.pw||'–')+'us, '+(c.freq||'–')+'Hz — benefit: '+(c.benefit||'none')+'; SE: '+((c.effects&&c.effects.join(', '))||'none')));L.push('');}
+  // checkins
+  if(s.checkins.length){L.push('PATIENT CHECK-INS');s.checkins.forEach(c=>L.push('  • '+fmtTime(c.time)+': distress '+c.distress+'/10'+(c.feelings.length?' — '+c.feelings.join(', '):'')+(c.note?' — "'+c.note+'"':'')));L.push('');}
+  // scales
+  if(s.scales.length){L.push('SCALES ADMINISTERED');s.scales.forEach(r=>{if(r.scaleId==='cssrs')L.push('  • C-SSRS: '+r.risk+' risk (highest Q'+(r.highest||'-')+')');else L.push('  • '+SCALES[r.scaleId].name+': '+r.score+'/'+SCALES[r.scaleId].max+' ('+r.severity+')');});L.push('');}
+  L.push('Provider: ____________________   Signature: ____________________');
+  L.push('');
+  L.push('— Generated by PsychBridge (prototype). Not a validated medical record.');
+  return L.join('\n');
+}
+const LABELS={agent:'Agent',dose:'Dose',rate:'Infusion (min)',route:'Route',placement:'Electrode placement',charge:'Charge (mC)',pct:'Energy (%)',pw:'Pulse width (ms)',multiple:'× seizure threshold',induction:'Induction agent',inddose:'Induction dose (mg/kg)',nmb:'Muscle relaxant',motor:'Motor seizure (s)',eeg:'EEG seizure (s)',psi:'Postictal suppression',ictal:'Ictal notes',rot:'Reorientation (min)',confusion:'Post-ictal confusion',memory:'Subjective memory',rmt:'Resting MT (%MSO)',intensity:'Intensity (% MT)',rmtmethod:'RMT method',protocol:'Protocol',target:'Target',pulses:'Pulses/session',sessno:'Session #',scalp:'Scalp pain (0-10)',headache:'Headache',safety:'Safety events',side:'Hemisphere',config:'Configuration'};
+function labelFor(k){return LABELS[k]||k;}
+function copyNote(){const t=$('#noteArea').value;navigator.clipboard.writeText(t).then(()=>toast('Note copied ✓'),()=>toast('Copy failed'));}
+function downloadNote(){const t=$('#noteArea').value;const b=new Blob([t],{type:'text/plain'});const a=el('a');a.href=URL.createObjectURL(b);a.download='psychbridge_note_'+new Date().toISOString().slice(0,10)+'.txt';a.click();toast('Downloaded ✓');}
+
+/* ============================================================
+   SHEETS — patient, vitals, contact, settings, reference
+   ============================================================ */
+function openSheet(title,sub,body,foot){
+  $('#sheet').innerHTML=`<div class="sheet-head"><div><h3>${esc(title)}</h3>${sub?`<div class="sh-sub">${esc(sub)}</div>`:''}</div><button class="x-btn" onclick="closeSheet()">✕</button></div><div class="sheet-body">${body}</div>${foot?`<div class="sheet-foot">${foot}</div>`:''}`;
+  $('#overlay').classList.add('open');
+}
+function closeSheet(){$('#overlay').classList.remove('open');}
+
+function openPatientSheet(){
+  let body='';
+  if(state.patients.length){body+=`<div class="section-label" style="margin-top:0">Patients</div><div class="card flush" style="margin-bottom:16px">`;
+    state.patients.forEach(p=>{const label=p.identified?(p.name||'Unnamed'):(p.code||'Anon');const active=state.patient&&state.patient.id===p.id;
+      body+=`<div class="scale-item" onclick="selectPatient('${p.id}')"><div class="pavatar" style="width:34px;height:34px">${esc((label[0]||'?').toUpperCase())}</div><div class="sinfo"><div class="sname">${esc(label)} ${active?'<span class="deid-pill" style="margin-left:4px">current</span>':''}</div><div class="sdesc">${p.identified?'<span style=color:var(--warning)>PHI</span>':'De-identified'}${p.dx?' · '+esc(p.dx):''}</div></div><span onclick="event.stopPropagation();delPatient('${p.id}')" style="color:var(--danger);padding:8px">🗑</span></div>`;});
+    body+=`</div>`;}
+  body+=`<div class="section-label">New patient</div>`;
+  body+=`<div class="field"><label>Mode</label><div class="seg" id="newMode"><button class="on" onclick="newPatientMode(this,false)">De-identified</button><button onclick="newPatientMode(this,true)">Identified (PHI)</button></div></div>`;
+  body+=`<div id="deidFields"><div class="field"><label>Study / session code <span class="hint">no name</span></label><input class="inp" id="npCode" placeholder="e.g. KET-014"></div></div>`;
+  body+=`<div id="phiFields" style="display:none"><div class="flag warn"><span class="fi">⚠️</span><div><strong>This makes the record PHI.</strong> Handle per HIPAA. This prototype stores data only in this browser (IndexedDB) with no encryption, access control, or audit — not for real PHI without proper controls.</div></div>
+    <div class="field"><label>Name</label><input class="inp" id="npName" placeholder="Last, First"></div>
+    <div class="row"><div class="field"><label>MRN</label><input class="inp" id="npMrn"></div><div class="field"><label>DOB</label><input class="inp" id="npDob" placeholder="YYYY-MM-DD"></div></div>`;
+  body+=`<div class="field"><label>Working diagnosis (optional)</label><input class="inp" id="npDx" placeholder="e.g. Treatment-resistant MDD"></div>`;
+  openSheet('Patients','Choose, add, or remove',body,`<button class="btn ghost" onclick="closeSheet()">Close</button><button class="btn primary" onclick="createPatient()">＋ Create patient</button>`);
+}
+let npIdentified=false;
+function newPatientMode(node,id){npIdentified=id;$$('#newMode button').forEach(b=>b.classList.remove('on'));node.classList.add('on');$('#deidFields').style.display=id?'none':'block';$('#phiFields').style.display=id?'block':'none';}
+async function createPatient(){
+  const p={id:uid(),identified:npIdentified,createdAt:nowISO()};
+  if(npIdentified){p.name=$('#npName').value.trim();p.mrn=$('#npMrn').value.trim();p.dob=$('#npDob').value.trim();if(!p.name){toast('Enter a name');return;}}
+  else{p.code=$('#npCode').value.trim()||('Anon-'+Math.floor(Math.random()*900+100));}
+  p.dx=$('#npDx').value.trim();
+  await dbPut('patients',p);state.patients.push(p);state.patient=p;await dbPut('kv',{k:'lastPatient',v:p.id});
+  npIdentified=false;closeSheet();ensureSession();render();toast('Patient created ✓');
+}
+async function selectPatient(id){state.patient=state.patients.find(p=>p.id===id);await dbPut('kv',{k:'lastPatient',v:id});state.session=null;ensureSession();closeSheet();render();}
+async function delPatient(id){if(!confirm('Delete this patient and all their sessions? This cannot be undone.'))return;await dbDel('patients',id);state.patients=state.patients.filter(p=>p.id!==id);const ss=state.sessions.filter(s=>s.patientId===id);for(const s of ss)await dbDel('sessions',s.id);state.sessions=state.sessions.filter(s=>s.patientId!==id);if(state.patient&&state.patient.id===id)state.patient=state.patients[0]||null;state.session=null;openPatientSheet();render();toast('Deleted');}
+
+function addVital(tp){
+  let label=tp;if(tp==='Custom')label=prompt('Timepoint label (e.g. "90 min")','90 min')||'Timepoint';
+  const body=`<div class="row"><div class="field"><label>Systolic</label><input class="inp" id="vSbp" type="number" inputmode="numeric"></div><div class="field"><label>Diastolic</label><input class="inp" id="vDbp" type="number" inputmode="numeric"></div></div>
+    <div class="row"><div class="field"><label>HR</label><input class="inp" id="vHr" type="number" inputmode="numeric"></div><div class="field"><label>SpO₂ %</label><input class="inp" id="vSpo2" type="number" inputmode="numeric"></div></div>
+    <div class="field"><label>RASS <span class="hint">-5 (unarousable) … 0 (calm) … +4 (combative)</span></label><select class="inp" id="vRass"><option value="">—</option>${[4,3,2,1,0,-1,-2,-3,-4,-5].map(n=>`<option>${n}</option>`).join('')}</select></div>
+    <div class="field"><label>MOAA-S <span class="hint">5 (alert) … 0 (no response)</span></label><select class="inp" id="vMoaas"><option value="">—</option>${[5,4,3,2,1,0].map(n=>`<option>${n}</option>`).join('')}</select></div>`;
+  openSheet('Log timepoint — '+label,'BP, HR, SpO₂, sedation',body,`<button class="btn ghost" onclick="closeSheet()">Cancel</button><button class="btn primary" onclick="saveVital('${label.replace(/'/g,"")}')">Save</button>`);
+}
+async function saveVital(label){
+  const g=id=>{const e=$('#'+id);return e&&e.value!==''?e.value:null;};
+  state.session.vitals.push({id:uid(),tp:label,time:nowISO(),sbp:g('vSbp'),dbp:g('vDbp'),hr:g('vHr'),spo2:g('vSpo2'),rass:g('vRass'),moaas:g('vMoaas')});
+  await saveSession();closeSheet();renderMonitor();toast('Timepoint logged ✓');
+}
+async function delVital(id){state.session.vitals=state.session.vitals.filter(v=>v.id!==id);await saveSession();renderMonitor();}
+
+const DBS_EFFECTS=['Paresthesia','Mood ↑ (mirth/euphoria)','Mood ↓ (sadness/tears)','Anxiety','Muscle contraction','Dysarthria','Autonomic (sweating/flush)','Gaze/diplopia/oscillopsia','Nausea'];
+let contactEffects=new Set();
+function addContact(){
+  contactEffects=new Set();
+  const body=`<div class="row"><div class="field"><label>Contact</label><input class="inp" id="cName" placeholder="e.g. 1- / C+2-"></div><div class="field"><label>Amplitude</label><input class="inp" id="cAmp" type="number" inputmode="decimal"></div></div>
+    ${`<div class="field"><label>Amplitude unit</label><div class="seg" id="cUnit"><button class="on" onclick="pickUnit(this,'V')">V</button><button onclick="pickUnit(this,'mA')">mA</button></div></div>`}
+    <div class="row"><div class="field"><label>Pulse width (µs)</label><input class="inp" id="cPw" type="number" inputmode="numeric" placeholder="60–210"></div><div class="field"><label>Frequency (Hz)</label><input class="inp" id="cFreq" type="number" inputmode="numeric" placeholder="~130"></div></div>
+    <div class="field"><label>Therapeutic benefit observed</label><input class="inp" id="cBenefit" placeholder="e.g. calmer, brighter affect at 4 V"></div>
+    <div class="field"><label>Acute side effects (tap)</label><div class="feel-grid" style="grid-template-columns:repeat(2,1fr)">${DBS_EFFECTS.map(e=>`<div class="opt" style="margin:0" onclick="toggleEffect('${e.replace(/'/g,"\\'")}',this)"><span class="ov" style="width:18px;height:18px"></span><span style="font-size:12px">${esc(e)}</span></div>`).join('')}</div></div>`;
+  openSheet('Log contact test','Benefit vs side-effect threshold',body,`<button class="btn ghost" onclick="closeSheet()">Cancel</button><button class="btn primary" onclick="saveContact()">Save contact</button>`);
+}
+let cUnit='V';
+function pickUnit(node,u){cUnit=u;$$('#cUnit button').forEach(b=>b.classList.remove('on'));node.classList.add('on');}
+function toggleEffect(e,node){if(contactEffects.has(e)){contactEffects.delete(e);node.classList.remove('on');}else{contactEffects.add(e);node.classList.add('on');}}
+async function saveContact(){
+  state.session.contacts.push({id:uid(),time:nowISO(),contact:$('#cName').value.trim(),amp:$('#cAmp').value,ampUnit:cUnit,pw:$('#cPw').value,freq:$('#cFreq').value,benefit:$('#cBenefit').value.trim(),effects:[...contactEffects]});
+  await saveSession();closeSheet();renderMonitor();toast('Contact logged ✓');
+}
+async function delContact(id){state.session.contacts=state.session.contacts.filter(c=>c.id!==id);await saveSession();renderMonitor();}
+
+function openReference(){
+  let body='';
+  Object.entries(PROCEDURES).forEach(([k,pr])=>{body+=`<div class="section-label">${pr.icon} ${esc(pr.name)}</div><div class="card"><div class="ref-body open" style="display:block">${pr.reference}</div></div>`;});
+  openSheet('Clinical reference','Cited norms & safety — all procedures',body,`<button class="btn primary" onclick="closeSheet()">Close</button>`);
+}
+function openSettings(){
+  const body=`<div class="section-label" style="margin-top:0">Data</div>
+    <div class="card"><button class="btn" onclick="exportData()">⬇ Export all data (JSON)</button><div style="height:8px"></div><button class="btn danger" onclick="wipeData()">🗑 Erase all local data</button></div>
+    <div class="section-label">About</div>
+    <div class="card"><p style="font-size:13px;line-height:1.6">PsychBridge is a <strong>prototype</strong> companion for interventional psychiatry (ECT, ketamine, TMS, DBS): bedside monitoring, validated rating scales, response tracking, and structured notes — all stored locally in this browser.</p>
+    <p class="muted" style="margin-top:8px">It is <strong>not</strong> a validated medical device, EHR, or PHI-compliant system, and is not for clinical decisions without compliance + validation work. Clinical content is cited (see the Reference sheet and <code>_research/</code>). Scale items may carry copyright/permission terms.</p>
+    <p class="muted" style="margin-top:10px">created by D. K. Adrian Williams · <a href="https://github.com/dkawjr" style="color:var(--primary)">github.com/dkawjr</a></p></div>`;
+  openSheet('Settings','',body,`<button class="btn primary" onclick="closeSheet()">Close</button>`);
+}
+async function exportData(){const data={patients:state.patients,sessions:state.sessions,exported:nowISO()};const b=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});const a=el('a');a.href=URL.createObjectURL(b);a.download='psychbridge_export_'+new Date().toISOString().slice(0,10)+'.json';a.click();toast('Exported ✓');}
+async function wipeData(){if(!confirm('Erase ALL patients and sessions from this browser? Cannot be undone.'))return;for(const p of state.patients)await dbDel('patients',p.id);for(const s of state.sessions)await dbDel('sessions',s.id);state.patients=[];state.sessions=[];state.patient=null;state.session=null;closeSheet();render();toast('All data erased');}
+
+/* ============================================================
+   THEME + INIT
+   ============================================================ */
+function toggleTheme(){const cur=document.documentElement.getAttribute('data-theme');const next=cur==='dark'?'':'dark';document.documentElement.setAttribute('data-theme',next);localStorage.setItem('pb-theme',next);$('#themeBtn').textContent=next==='dark'?'☀️':'🌙';$('#themeColor').content=next==='dark'?'#100E1A':'#FFFFFF';}
+
+async function init(){
+  const t=localStorage.getItem('pb-theme');if(t==='dark'){document.documentElement.setAttribute('data-theme','dark');$('#themeBtn').textContent='☀️';$('#themeColor').content='#100E1A';}
+  await openDB();await loadAll();
+  $$('#modeSwitcher .mode-btn').forEach(b=>b.onclick=()=>setProc(b.dataset.proc));
+  $$('#tabBar .tab').forEach(t=>t.onclick=()=>setScreen(t.dataset.screen));
+  $('#patientBar').onclick=openPatientSheet;
+  $('#themeBtn').onclick=toggleTheme;
+  $('#settingsBtn').onclick=openSettings;
+  $('#refBtn').onclick=openReference;
+  $('#overlay').onclick=e=>{if(e.target.id==='overlay')closeSheet();};
+  render();
+}
+init();
+</script>
+</body>
+</html>
