@@ -8,6 +8,17 @@
 <meta name="theme-color" id="themeColor" content="#FFFFFF">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%236D5AE0'/%3E%3Ctext x='16' y='23' font-size='20' text-anchor='middle' fill='white' font-family='sans-serif'%3E%E2%97%87%3C/text%3E%3C/svg%3E">
 <title>PsychBridge — Interventional Psychiatry Companion</title>
+
+<!-- TensorFlow.js (classic global) — runs the fingerspelling MLP -->
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.22.0/dist/tf.min.js" crossorigin="anonymous"></script>
+<!-- MediaPipe Tasks-Vision HandLandmarker (ES module) — exposed on window -->
+<script type="module">
+  import { HandLandmarker, FilesetResolver, DrawingUtils }
+    from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.21/vision_bundle.mjs";
+  window.PB_TasksVision = { HandLandmarker, FilesetResolver, DrawingUtils };
+  window.dispatchEvent(new Event('pb-tasks-vision-ready'));
+</script>
+
 <style>
 /* ===== RESET ===== */
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
@@ -216,6 +227,25 @@ textarea.inp{resize:vertical;min-height:80px;font-size:14px;line-height:1.5;}
 .toast{position:fixed;bottom:calc(var(--tab-height) + 16px + var(--safe-bottom));left:50%;transform:translateX(-50%);background:var(--text-primary);color:var(--bg);padding:10px 18px;border-radius:var(--radius-full);font-size:13px;font-weight:600;z-index:200;box-shadow:var(--shadow-lg);opacity:0;pointer-events:none;transition:opacity .2s;white-space:nowrap;}
 .toast.show{opacity:1;}
 
+/* ===== ASL COMMUNICATE ===== */
+.comm-banner{display:flex;align-items:center;gap:12px;padding:var(--space-lg);border-radius:var(--radius-lg);background:linear-gradient(135deg,var(--primary),var(--accent));color:#fff;cursor:pointer;box-shadow:var(--shadow-md);margin-bottom:var(--space-md);}
+.comm-banner .ce{font-size:30px;flex-shrink:0;}
+.comm-banner .ct{font-size:15px;font-weight:800;}
+.comm-banner .cs{font-size:12px;opacity:.9;}
+.cam-stage{position:relative;width:100%;aspect-ratio:4/3;background:#000;border-radius:var(--radius-lg);overflow:hidden;margin-bottom:var(--space-md);}
+.cam-stage video,.cam-stage canvas{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transform:scaleX(-1);}
+.cam-status{position:absolute;top:8px;left:8px;display:flex;align-items:center;gap:6px;background:rgba(0,0,0,.55);color:#fff;font-size:11px;font-weight:600;padding:5px 10px;border-radius:var(--radius-full);}
+.cam-status .dot{width:8px;height:8px;border-radius:50%;background:#9893AB;}
+.cam-status.tracking .dot{background:#34D399;box-shadow:0 0 0 3px rgba(52,211,153,.25);}
+.cam-letter{position:absolute;bottom:8px;right:8px;background:rgba(0,0,0,.6);color:#fff;border-radius:var(--radius-md);padding:6px 12px;text-align:center;min-width:54px;}
+.cam-letter .cl{font-size:30px;font-weight:800;line-height:1;}
+.cam-letter .cc{font-size:10px;opacity:.85;}
+.word-strip{background:var(--bg-inset);border:1px solid var(--border);border-radius:var(--radius-md);padding:var(--space-md);min-height:52px;font-size:18px;font-weight:600;margin-bottom:var(--space-sm);word-break:break-word;}
+.word-strip .cur{color:var(--primary);border-bottom:2px solid var(--primary);}
+.word-strip .ph{color:var(--text-tertiary);font-weight:400;font-size:14px;}
+.comm-keys{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:var(--space-sm);}
+.comm-keys button{padding:11px 4px;border:1px solid var(--border);border-radius:var(--radius-md);background:var(--bg-elevated);font-family:var(--font);font-size:13px;font-weight:600;color:var(--text-primary);cursor:pointer;}
+.comm-keys button:active{background:var(--bg-inset);}
 .footer-credit{text-align:center;font-size:11px;color:var(--text-tertiary);padding:var(--space-lg) 0 4px;}
 .footer-credit a{color:var(--text-secondary);text-decoration:none;font-weight:600;}
 .disclaimer{font-size:11px;color:var(--text-tertiary);line-height:1.5;background:var(--bg-inset);border:1px solid var(--border);border-radius:var(--radius-md);padding:var(--space-md);margin-bottom:var(--space-md);}
@@ -226,6 +256,7 @@ textarea.inp{resize:vertical;min-height:80px;font-size:14px;line-height:1.5;}
   <div class="top-nav">
     <h1><span class="logo">◇</span>Psych<span class="brand-mark">Bridge</span></h1>
     <div class="nav-actions">
+      <button class="nav-btn" id="commBtn" title="ASL / Sign communication">🤟</button>
       <button class="nav-btn" id="refBtn" title="Reference">📖</button>
       <button class="nav-btn" id="themeBtn" title="Theme">🌙</button>
       <button class="nav-btn" id="settingsBtn" title="Settings">⋯</button>
@@ -658,6 +689,7 @@ function monDBS(){
 let pendingFeel=new Set();let pendingDistress=5;
 function renderCheckin(){
   let h=`<h2>💬 How are you feeling?</h2><div class="subtitle">For the patient — tap anything that fits. Big buttons for when it's hard to talk.</div>`;
+  h+=`<div class="comm-banner" onclick="openCommunicate()"><span class="ce">🤟</span><div><div class="ct">Sign to communicate (ASL)</div><div class="cs">Deaf or non-speaking? Fingerspell with the camera — read aloud &amp; logged.</div></div></div>`;
   h+=`<div class="section-label">Distress right now</div><div class="card"><div class="distress">
     <div class="distress-val" id="distressVal">${pendingDistress}</div>
     <input type="range" min="0" max="10" value="${pendingDistress}" oninput="pendingDistress=+this.value;document.getElementById('distressVal').textContent=this.value">
@@ -898,7 +930,7 @@ function openSheet(title,sub,body,foot){
   $('#sheet').innerHTML=`<div class="sheet-head"><div><h3>${esc(title)}</h3>${sub?`<div class="sh-sub">${esc(sub)}</div>`:''}</div><button class="x-btn" onclick="closeSheet()">✕</button></div><div class="sheet-body">${body}</div>${foot?`<div class="sheet-foot">${foot}</div>`:''}`;
   $('#overlay').classList.add('open');
 }
-function closeSheet(){$('#overlay').classList.remove('open');}
+function closeSheet(){$('#overlay').classList.remove('open');if(camActive||camStream)stopCamera();}
 
 function openPatientSheet(){
   let body='';
@@ -981,6 +1013,127 @@ async function exportData(){const data={patients:state.patients,sessions:state.s
 async function wipeData(){if(!confirm('Erase ALL patients and sessions from this browser? Cannot be undone.'))return;for(const p of state.patients)await dbDel('patients',p.id);for(const s of state.sessions)await dbDel('sessions',s.id);state.patients=[];state.sessions=[];state.patient=null;state.session=null;closeSheet();render();toast('All data erased');}
 
 /* ============================================================
+   ASL FINGERSPELLING — deaf / non-speaking patient communication
+   Ported from SignBridge: MediaPipe Tasks HandLandmarker + TF.js MLP
+   over the normalized 21-landmark vector (kinivi recipe). A–Y model.
+   ============================================================ */
+let aslModel=null,aslLabels=null,aslReady=false;
+let handLandmarker=null,mpReady=false;
+let camStream=null,camActive=false,rafId=null,_lastVT=-1;
+let drawUtils=null;
+let spellBuf='',commitText='',lastLetter='',lastLetterTime=0,commitTimer=null;
+let predHistory=[];
+const HAND_MIRROR=1, SMOOTH_WINDOW=6, CONF_THRESHOLD=0.7, HAND_SETTLE_MS=700, HAND_GAP_MS=500;
+
+async function loadASLModel(){
+  if(aslModel)return;
+  try{aslLabels=await(await fetch('./model/labels.json')).json();}catch(_){aslLabels=["A","B","C","D","E","F","G","H","I","K","L","M","N","O","P","Q","R","S","T","U","V","W","X","Y"];}
+  aslModel=await tf.loadLayersModel('./model/model.json');aslReady=true;
+}
+function normalizeLandmarks(landmarks){
+  const wrist=landmarks[0],vec=new Array(42);
+  for(let i=0;i<21;i++){vec[i*2]=(landmarks[i].x-wrist.x)*HAND_MIRROR;vec[i*2+1]=(landmarks[i].y-wrist.y);}
+  let maxAbs=0;for(let i=0;i<42;i++){const a=Math.abs(vec[i]);if(a>maxAbs)maxAbs=a;}
+  if(maxAbs>1e-6)for(let i=0;i<42;i++)vec[i]/=maxAbs;
+  return vec;
+}
+async function initHandLandmarker(){
+  if(handLandmarker)return;
+  if(!window.PB_TasksVision||!window.PB_TasksVision.HandLandmarker){
+    setCamStatus('Loading hand model…');
+    window.addEventListener('pb-tasks-vision-ready',()=>initHandLandmarker(),{once:true});
+    setTimeout(()=>{if(!handLandmarker)initHandLandmarker();},1500);return;
+  }
+  try{
+    const{HandLandmarker,FilesetResolver}=window.PB_TasksVision;
+    const fileset=await FilesetResolver.forVisionTasks('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.21/wasm');
+    handLandmarker=await HandLandmarker.createFromOptions(fileset,{baseOptions:{modelAssetPath:'https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task',delegate:'GPU'},runningMode:'VIDEO',numHands:1});
+    mpReady=true;
+    if(camActive&&rafId===null){_lastVT=-1;rafId=requestAnimationFrame(camLoop);}
+    setCamStatus('Ready — show your hand');
+  }catch(e){setCamStatus('Hand model loading…');setTimeout(initHandLandmarker,2000);}
+}
+function setCamStatus(txt,tracking){const s=$('#camStatus');if(s){s.className='cam-status'+(tracking?' tracking':'');s.innerHTML='<span class="dot"></span>'+esc(txt);}}
+function camLoop(){
+  if(!camActive||!handLandmarker){rafId=null;return;}
+  const v=$('#camFeed');
+  if(v&&v.readyState>=2&&v.currentTime!==_lastVT){_lastVT=v.currentTime;
+    let r=null;try{r=handLandmarker.detectForVideo(v,performance.now());}catch(e){}
+    if(r)onHands(r);}
+  rafId=requestAnimationFrame(camLoop);
+}
+function onHands(result){
+  const canvas=$('#camCanvas');if(!canvas)return;const ctx=canvas.getContext('2d');const v=$('#camFeed');
+  const w=(v&&v.videoWidth)||640,h=(v&&v.videoHeight)||480;canvas.width=w;canvas.height=h;ctx.clearRect(0,0,w,h);
+  const hands=(result&&result.landmarks)||[];
+  if(hands.length){setCamStatus('Hand tracked — 21 points',true);
+    const DU=window.PB_TasksVision.DrawingUtils,HL=window.PB_TasksVision.HandLandmarker;
+    if(DU&&(!drawUtils||drawUtils.__c!==ctx)){drawUtils=new DU(ctx);drawUtils.__c=ctx;}
+    for(const lm of hands){if(drawUtils&&HL&&HL.HAND_CONNECTIONS){drawUtils.drawConnectors(lm,HL.HAND_CONNECTIONS,{color:'rgba(109,90,224,0.65)',lineWidth:2});drawUtils.drawLandmarks(lm,{color:'rgba(14,159,154,0.95)',radius:3});}}
+    recognizeHands(result);
+  }else{setCamStatus('Show your hand to start',false);predHistory=[];onHands._since=0;}
+}
+function smoothPrediction(cls,conf){
+  predHistory.push({cls,conf});if(predHistory.length>SMOOTH_WINDOW)predHistory.shift();
+  const counts={},sum={};for(const p of predHistory){counts[p.cls]=(counts[p.cls]||0)+1;sum[p.cls]=(sum[p.cls]||0)+p.conf;}
+  let best=null,bc=0;for(const k in counts)if(counts[k]>bc){bc=counts[k];best=k;}
+  if(best===null||bc<Math.ceil(SMOOTH_WINDOW/2))return null;
+  return{cls:best,conf:sum[best]/counts[best]};
+}
+function recognizeHands(result){
+  if(!aslReady||!aslModel)return;
+  const hands=result.landmarks||[];const now=Date.now();
+  if(!recognizeHands._last||(now-recognizeHands._last)>HAND_GAP_MS)recognizeHands._since=now;
+  recognizeHands._last=now;
+  if(!recognizeHands._since)recognizeHands._since=now;
+  if(now-recognizeHands._since<HAND_SETTLE_MS)return;
+  const vec=normalizeLandmarks(hands[0]);
+  let probs;try{probs=tf.tidy(()=>aslModel.predict(tf.tensor2d([vec],[1,42])).dataSync());}catch(e){return;}
+  let top=0,tp=0;for(let i=0;i<aslLabels.length;i++)if(probs[i]>tp){tp=probs[i];top=i;}
+  const sm=smoothPrediction(aslLabels[top],tp);if(!sm)return;
+  const le=$('#camLetterVal'),ce=$('#camLetterConf');if(le){le.textContent=sm.cls;ce.textContent=Math.round(sm.conf*100)+'%';}
+  if(sm.conf<CONF_THRESHOLD)return;
+  if(now-(recognizeHands._detect||0)<350)return;
+  const letter=sm.cls;
+  if(letter===lastLetter&&(now-lastLetterTime)<1200){recognizeHands._detect=now;return;}
+  lastLetter=letter;lastLetterTime=now;recognizeHands._detect=now;
+  spellBuf+=letter;updateCommDisplay();
+  clearTimeout(commitTimer);commitTimer=setTimeout(commitWord,1600);
+}
+function commitWord(){if(spellBuf.length){commitText+=spellBuf+' ';speak(spellBuf);spellBuf='';lastLetter='';updateCommDisplay();}}
+function updateCommDisplay(){const s=$('#wordStrip');if(!s)return;
+  if(!commitText&&!spellBuf){s.innerHTML='<span class="ph">Fingerspelled words appear here…</span>';return;}
+  s.innerHTML=esc(commitText)+(spellBuf?`<span class="cur">${esc(spellBuf)}</span>`:'');}
+function speak(t){if(!t||!('speechSynthesis'in window))return;try{const u=new SpeechSynthesisUtterance(t);u.rate=.95;speechSynthesis.cancel();speechSynthesis.speak(u);}catch(e){}}
+function commSpeakAll(){speak((commitText+spellBuf).trim());}
+function commSpace(){commitWord();}
+function commBackspace(){if(spellBuf){spellBuf=spellBuf.slice(0,-1);}else if(commitText){commitText=commitText.trimEnd();const i=commitText.lastIndexOf(' ');commitText=i>=0?commitText.slice(0,i+1):'';}updateCommDisplay();}
+function commClear(){spellBuf='';commitText='';lastLetter='';updateCommDisplay();}
+async function commLog(){const txt=(commitText+spellBuf).trim();if(!txt){toast('Nothing to log');return;}
+  state.session.checkins.push({time:nowISO(),distress:0,feelings:['🤟 ASL message'],note:txt});await saveSession();toast('Message logged ✓');}
+
+function openCommunicate(){
+  if(!state.patient){toast('Select a patient first');openPatientSheet();return;}
+  spellBuf='';commitText='';lastLetter='';predHistory=[];
+  const body=`<div class="flag info"><span class="fi">🤟</span><div>Fingerspell letters (A–Y). Hold each ~1 second; pause to finish a word. Each word is read aloud. J and Z need motion and aren't recognized — use Space/keys.</div></div>
+    <div class="cam-stage"><video id="camFeed" playsinline muted autoplay></video><canvas id="camCanvas"></canvas><div class="cam-status" id="camStatus"><span class="dot"></span>Starting camera…</div><div class="cam-letter"><div class="cl" id="camLetterVal">–</div><div class="cc" id="camLetterConf"></div></div></div>
+    <div class="word-strip" id="wordStrip"><span class="ph">Fingerspelled words appear here…</span></div>
+    <div class="comm-keys"><button onclick="commSpace()">␣ Space</button><button onclick="commBackspace()">⌫ Back</button><button onclick="commClear()">Clear</button><button onclick="commSpeakAll()">🔊 Speak</button></div>`;
+  openSheet('Communicate — ASL','Deaf / non-speaking patient',body,`<button class="btn ghost" onclick="closeSheet()">Close</button><button class="btn primary" onclick="commLog()">＋ Log to check-in</button>`);
+  startCamera();
+}
+async function startCamera(){
+  initHandLandmarker();loadASLModel().catch(()=>setCamStatus('Model failed to load'));
+  try{
+    camStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user',width:640,height:480}});
+    const v=$('#camFeed');if(!v){stopCamera();return;}v.srcObject=camStream;await v.play().catch(()=>{});
+    camActive=true;if(mpReady&&rafId===null){_lastVT=-1;rafId=requestAnimationFrame(camLoop);}
+    setCamStatus(mpReady?'Show your hand to start':'Loading hand model…');
+  }catch(e){setCamStatus('Camera unavailable — check permissions');}
+}
+function stopCamera(){camActive=false;if(rafId){cancelAnimationFrame(rafId);rafId=null;}if(camStream){camStream.getTracks().forEach(t=>t.stop());camStream=null;}try{speechSynthesis.cancel();}catch(e){}}
+
+/* ============================================================
    THEME + INIT
    ============================================================ */
 function toggleTheme(){const cur=document.documentElement.getAttribute('data-theme');const next=cur==='dark'?'':'dark';document.documentElement.setAttribute('data-theme',next);localStorage.setItem('pb-theme',next);$('#themeBtn').textContent=next==='dark'?'☀️':'🌙';$('#themeColor').content=next==='dark'?'#100E1A':'#FFFFFF';}
@@ -994,6 +1147,7 @@ async function init(){
   $('#themeBtn').onclick=toggleTheme;
   $('#settingsBtn').onclick=openSettings;
   $('#refBtn').onclick=openReference;
+  $('#commBtn').onclick=openCommunicate;
   $('#overlay').onclick=e=>{if(e.target.id==='overlay')closeSheet();};
   render();
 }
