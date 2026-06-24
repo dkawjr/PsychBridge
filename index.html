@@ -246,6 +246,20 @@ textarea.inp{resize:vertical;min-height:80px;font-size:14px;line-height:1.5;}
 .comm-keys{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:var(--space-sm);}
 .comm-keys button{padding:11px 4px;border:1px solid var(--border);border-radius:var(--radius-md);background:var(--bg-elevated);font-family:var(--font);font-size:13px;font-weight:600;color:var(--text-primary);cursor:pointer;}
 .comm-keys button:active{background:var(--bg-inset);}
+/* show-to-patient hand-shape player */
+.ss-stage{position:relative;background:var(--bg-elevated);border:1px solid var(--border);border-radius:var(--radius-lg);height:300px;display:flex;align-items:center;justify-content:center;margin-bottom:var(--space-sm);box-shadow:var(--shadow-sm);color:var(--text-primary);}
+.ss-hand{height:260px;width:100%;display:flex;align-items:center;justify-content:center;}
+.ss-hand svg{height:100%;width:auto;color:inherit;}
+.ss-letter{position:absolute;bottom:10px;right:16px;font-size:52px;font-weight:800;color:var(--primary);line-height:1;}
+.ss-bar{height:6px;background:var(--bg-inset);border-radius:var(--radius-full);overflow:hidden;margin-bottom:var(--space-sm);}
+.ss-bar>div{height:100%;width:0;background:var(--primary);transition:width .25s ease;}
+.ss-word{font-size:20px;font-weight:700;letter-spacing:5px;text-transform:uppercase;color:var(--text-tertiary);min-height:26px;text-align:center;margin-bottom:var(--space-sm);word-break:break-word;}
+.ss-word .cur{color:var(--primary);}
+.ss-word .done{color:var(--text-primary);}
+.ss-word .ph{letter-spacing:normal;text-transform:none;font-weight:400;font-size:14px;}
+.ss-chips{display:flex;flex-wrap:wrap;gap:6px;}
+.ss-chips button{padding:9px 13px;border:1px solid var(--border);border-radius:var(--radius-full);background:var(--bg-elevated);font-family:var(--font);font-size:13px;font-weight:600;color:var(--text-primary);cursor:pointer;}
+.ss-chips button:active{background:var(--bg-inset);}
 /* ===== FLOATING TRANSLATE BUTTON (persistent on all screens) ===== */
 .fab{position:absolute;right:14px;bottom:calc(var(--tab-height) + 16px + var(--safe-bottom));z-index:30;display:flex;align-items:center;gap:8px;padding:13px 20px;border-radius:var(--radius-full);background:linear-gradient(135deg,var(--primary),var(--accent));color:#fff;border:none;font-family:var(--font);font-size:15px;font-weight:800;box-shadow:var(--shadow-lg);cursor:pointer;}
 .fab:active{transform:scale(.97);}
@@ -980,7 +994,7 @@ function openSheet(title,sub,body,foot){
   $('#sheet').innerHTML=`<div class="sheet-head"><div><h3>${esc(title)}</h3>${sub?`<div class="sh-sub">${esc(sub)}</div>`:''}</div><button class="x-btn" onclick="closeSheet()">✕</button></div><div class="sheet-body">${body}</div>${foot?`<div class="sheet-foot">${foot}</div>`:''}`;
   $('#overlay').classList.add('open');
 }
-function closeSheet(){$('#overlay').classList.remove('open');if(camActive||camStream)stopCamera();}
+function closeSheet(){$('#overlay').classList.remove('open');if(camActive||camStream)stopCamera();stopFingerspell();}
 
 function openPatientSheet(){
   let body='';
@@ -1162,19 +1176,54 @@ function commClear(){spellBuf='';commitText='';lastLetter='';updateCommDisplay()
 async function commLog(){if(!state.patient){toast('Pick a patient to save');return;}const txt=(commitText+spellBuf).trim();if(!txt){toast('Nothing to log');return;}
   state.session.checkins.push({time:nowISO(),distress:0,feelings:['🤟 ASL message'],note:txt});await saveSession();toast('Message logged ✓');}
 
+const SHOW_PHRASES=['Breathe','Relax','Almost done','All done','Open eyes','Squeeze my hand','Are you OK','You are safe','Stay still','Any pain','More','Stop'];
+let commMode='read',ssLast='';
 function openCommunicate(){
-  spellBuf='';commitText='';lastLetter='';predHistory=[];
-  const body=`<div class="flag info"><span class="fi">🤟</span><div>Fingerspell letters (A–Y). Hold each ~1 second; pause to finish a word. Each word is read aloud. J and Z need motion and aren't recognized — use Space/keys.</div></div>
-    <div class="cam-stage"><video id="camFeed" playsinline muted autoplay></video><canvas id="camCanvas"></canvas><div class="cam-status" id="camStatus"><span class="dot"></span>Starting camera…</div><div class="cam-letter"><div class="cl" id="camLetterVal">–</div><div class="cc" id="camLetterConf"></div></div></div>
-    <div class="word-strip" id="wordStrip"><span class="ph">Fingerspelled words appear here…</span></div>
-    <div class="comm-keys"><button onclick="commSpace()">␣ Space</button><button onclick="commBackspace()">⌫ Back</button><button onclick="commClear()">Clear</button><button onclick="commSpeakAll()">🔊 Speak</button></div>
-    ${state.patient?'':`<div class="muted" style="margin-top:10px;text-align:center">Translate-only mode — pick a patient to save messages to a visit.</div>`}`;
-  const foot=state.patient
-    ?`<button class="btn ghost" onclick="closeSheet()">Close</button><button class="btn primary" onclick="commLog()">＋ Log to check-in</button>`
-    :`<button class="btn primary" onclick="closeSheet()">Close</button>`;
-  openSheet('Communicate — ASL',state.patient?'Deaf / non-speaking patient':'Quick translate',body,foot);
-  startCamera();
+  spellBuf='';commitText='';lastLetter='';predHistory=[];commMode='read';
+  const shell=`<div class="seg" id="commSeg" style="margin-bottom:14px"><button class="on" onclick="setCommMode('read')">👁️ Read patient</button><button onclick="setCommMode('show')">🤟 Show patient</button></div><div id="commBody"></div>`;
+  openSheet('Communicate — ASL',state.patient?'Two-way deaf / non-speaking':'Quick translate',shell,`<button class="btn primary" onclick="closeSheet()">Close</button>`);
+  renderCommBody();
 }
+function setCommMode(m){if(m===commMode)return;if(commMode==='read')stopCamera();else stopFingerspell();commMode=m;
+  const s=$$('#commSeg button');if(s[0])s[0].classList.toggle('on',m==='read');if(s[1])s[1].classList.toggle('on',m==='show');renderCommBody();}
+function renderCommBody(){const c=$('#commBody');if(!c)return;
+  if(commMode==='read'){
+    c.innerHTML=`<div class="flag info"><span class="fi">🤟</span><div>Patient fingerspells (A–Y). Hold each ~1 s; pause to finish a word — each word is read aloud. J & Z need motion, use Space.</div></div>
+      <div class="cam-stage"><video id="camFeed" playsinline muted autoplay></video><canvas id="camCanvas"></canvas><div class="cam-status" id="camStatus"><span class="dot"></span>Starting camera…</div><div class="cam-letter"><div class="cl" id="camLetterVal">–</div><div class="cc" id="camLetterConf"></div></div></div>
+      <div class="word-strip" id="wordStrip"><span class="ph">Fingerspelled words appear here…</span></div>
+      <div class="comm-keys"><button onclick="commSpace()">␣ Space</button><button onclick="commBackspace()">⌫ Back</button><button onclick="commClear()">Clear</button><button onclick="commSpeakAll()">🔊 Speak</button></div>
+      ${state.patient?`<button class="btn primary" style="margin-top:8px" onclick="commLog()">＋ Log message to check-in</button>`:`<div class="muted" style="margin-top:10px;text-align:center">Translate-only mode — pick a patient to save messages.</div>`}`;
+    startCamera();
+  }else{
+    c.innerHTML=`<div class="flag info"><span class="fi">👁️</span><div>Show these signs <strong>to the patient</strong> — the hand demonstrates each letter. Tap a quick phrase or type your own.</div></div>
+      <div class="ss-stage"><div class="ss-hand" id="ssHand"></div><div class="ss-letter" id="ssLetter">–</div></div>
+      <div class="ss-bar"><div id="ssBar"></div></div>
+      <div class="ss-word" id="ssWord"><span class="ph">Type or tap a phrase to fingerspell…</span></div>
+      <div class="field" style="margin-top:10px"><input class="inp" id="ssInput" placeholder="Type a message to sign…" onkeydown="if(event.key==='Enter')playShow(this.value)"></div>
+      <div class="row"><button class="btn primary" onclick="playShow(document.getElementById('ssInput').value)">Show signs</button><button class="btn" onclick="if(ssLast)playShow(ssLast)">↻ Replay</button></div>
+      <div class="section-label">Quick phrases</div>
+      <div class="ss-chips">${SHOW_PHRASES.map(p=>`<button onclick="playShow('${p.replace(/'/g,"\\'")}')">${esc(p)}</button>`).join('')}</div>`;
+    loadLetterSVGs();
+  }
+}
+/* ----- show-to-patient fingerspelling player (canonical Wikimedia ASL alphabet SVGs) ----- */
+let pbLetterSVGs=null,fsTimer=null;
+async function loadLetterSVGs(){if(pbLetterSVGs)return pbLetterSVGs;try{pbLetterSVGs=await(await fetch('./model/alphabet_svgs.json')).json();}catch(e){pbLetterSVGs={};}return pbLetterSVGs;}
+function ssDrawLetter(L){const h=$('#ssHand');if(h)h.innerHTML=(pbLetterSVGs&&pbLetterSVGs[L])||'';}
+function ssRenderWord(letters,idx){const w=$('#ssWord');if(!w)return;if(!letters.length){w.innerHTML='<span class="ph">Type or tap a phrase to fingerspell…</span>';return;}
+  w.innerHTML=letters.map((L,i)=>`<span class="${i<idx?'done':i===idx?'cur':''}">${L===' '?'&nbsp;':esc(L)}</span>`).join('');}
+async function playShow(text){
+  stopFingerspell();await loadLetterSVGs();
+  const disp=String(text||'').toUpperCase().replace(/[^A-Z ]/g,'').replace(/\s+/g,' ').trim();
+  if(!disp){toast('Type a message to sign');return;}
+  ssLast=disp;const letters=disp.split('');const pos=[];letters.forEach((c,i)=>{if(c!==' ')pos.push(i);});
+  const seq=letters.filter(c=>c!==' ');let i=0;const STEP=850;
+  const tick=()=>{const lt=$('#ssLetter'),bar=$('#ssBar');
+    if(i>=seq.length){if(lt)lt.textContent='✓';if(bar)bar.style.width='100%';ssRenderWord(letters,letters.length);fsTimer=null;return;}
+    const L=seq[i];if(lt)lt.textContent=L;ssDrawLetter(L);ssRenderWord(letters,pos[i]);if(bar)bar.style.width=Math.round((i+1)/seq.length*100)+'%';i++;fsTimer=setTimeout(tick,STEP);};
+  tick();
+}
+function stopFingerspell(){if(fsTimer){clearTimeout(fsTimer);fsTimer=null;}}
 async function startCamera(){
   initHandLandmarker();loadASLModel().catch(()=>setCamStatus('Model failed to load'));
   try{
