@@ -536,7 +536,8 @@ function render(){
 function renderNoPatient(){
   const html=`<div class="empty"><div class="ee">👋</div><div class="et">Welcome to PsychBridge</div>
     <div class="muted" style="max-width:300px;margin:0 auto var(--space-lg)">A bedside companion for interventional psychiatry — ECT, ketamine, TMS, and DBS. Monitor the patient, capture how they feel, and track treatment response over time.</div>
-    <button class="btn primary" style="max-width:240px;margin:0 auto" onclick="openPatientSheet()">＋ Add your first patient</button></div>`;
+    <div class="comm-banner" style="max-width:340px;margin:0 auto var(--space-md)" onclick="openCommunicate()"><span class="ce">🤟</span><div><div class="ct">Just translate (ASL camera)</div><div class="cs">Open the camera now — no setup needed.</div></div></div>
+    <button class="btn primary" style="max-width:340px;margin:0 auto" onclick="openPatientSheet()">＋ Add a patient</button></div>`;
   ['monitor','checkin','scales','response','note'].forEach(s=>$('#screen-'+s).innerHTML=html);
 }
 
@@ -1109,17 +1110,20 @@ function commSpeakAll(){speak((commitText+spellBuf).trim());}
 function commSpace(){commitWord();}
 function commBackspace(){if(spellBuf){spellBuf=spellBuf.slice(0,-1);}else if(commitText){commitText=commitText.trimEnd();const i=commitText.lastIndexOf(' ');commitText=i>=0?commitText.slice(0,i+1):'';}updateCommDisplay();}
 function commClear(){spellBuf='';commitText='';lastLetter='';updateCommDisplay();}
-async function commLog(){const txt=(commitText+spellBuf).trim();if(!txt){toast('Nothing to log');return;}
+async function commLog(){if(!state.patient){toast('Pick a patient to save');return;}const txt=(commitText+spellBuf).trim();if(!txt){toast('Nothing to log');return;}
   state.session.checkins.push({time:nowISO(),distress:0,feelings:['🤟 ASL message'],note:txt});await saveSession();toast('Message logged ✓');}
 
 function openCommunicate(){
-  if(!state.patient){toast('Select a patient first');openPatientSheet();return;}
   spellBuf='';commitText='';lastLetter='';predHistory=[];
   const body=`<div class="flag info"><span class="fi">🤟</span><div>Fingerspell letters (A–Y). Hold each ~1 second; pause to finish a word. Each word is read aloud. J and Z need motion and aren't recognized — use Space/keys.</div></div>
     <div class="cam-stage"><video id="camFeed" playsinline muted autoplay></video><canvas id="camCanvas"></canvas><div class="cam-status" id="camStatus"><span class="dot"></span>Starting camera…</div><div class="cam-letter"><div class="cl" id="camLetterVal">–</div><div class="cc" id="camLetterConf"></div></div></div>
     <div class="word-strip" id="wordStrip"><span class="ph">Fingerspelled words appear here…</span></div>
-    <div class="comm-keys"><button onclick="commSpace()">␣ Space</button><button onclick="commBackspace()">⌫ Back</button><button onclick="commClear()">Clear</button><button onclick="commSpeakAll()">🔊 Speak</button></div>`;
-  openSheet('Communicate — ASL','Deaf / non-speaking patient',body,`<button class="btn ghost" onclick="closeSheet()">Close</button><button class="btn primary" onclick="commLog()">＋ Log to check-in</button>`);
+    <div class="comm-keys"><button onclick="commSpace()">␣ Space</button><button onclick="commBackspace()">⌫ Back</button><button onclick="commClear()">Clear</button><button onclick="commSpeakAll()">🔊 Speak</button></div>
+    ${state.patient?'':`<div class="muted" style="margin-top:10px;text-align:center">Translate-only mode — pick a patient to save messages to a visit.</div>`}`;
+  const foot=state.patient
+    ?`<button class="btn ghost" onclick="closeSheet()">Close</button><button class="btn primary" onclick="commLog()">＋ Log to check-in</button>`
+    :`<button class="btn primary" onclick="closeSheet()">Close</button>`;
+  openSheet('Communicate — ASL',state.patient?'Deaf / non-speaking patient':'Quick translate',body,foot);
   startCamera();
 }
 async function startCamera(){
