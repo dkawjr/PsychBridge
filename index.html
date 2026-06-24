@@ -84,7 +84,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text-primary);line
 
 /* ===== SCREENS ===== */
 .screen-container{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;}
-.screen{display:none;padding:var(--space-lg);padding-bottom:90px;}
+.screen{display:none;padding:var(--space-lg);padding-bottom:140px;}
 .screen.active{display:block;animation:fade .2s ease;}
 @keyframes fade{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:none;}}
 
@@ -246,6 +246,16 @@ textarea.inp{resize:vertical;min-height:80px;font-size:14px;line-height:1.5;}
 .comm-keys{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:var(--space-sm);}
 .comm-keys button{padding:11px 4px;border:1px solid var(--border);border-radius:var(--radius-md);background:var(--bg-elevated);font-family:var(--font);font-size:13px;font-weight:600;color:var(--text-primary);cursor:pointer;}
 .comm-keys button:active{background:var(--bg-inset);}
+/* ===== FLOATING TRANSLATE BUTTON (persistent on all screens) ===== */
+.fab{position:absolute;right:14px;bottom:calc(var(--tab-height) + 16px + var(--safe-bottom));z-index:30;display:flex;align-items:center;gap:8px;padding:13px 20px;border-radius:var(--radius-full);background:linear-gradient(135deg,var(--primary),var(--accent));color:#fff;border:none;font-family:var(--font);font-size:15px;font-weight:800;box-shadow:var(--shadow-lg);cursor:pointer;}
+.fab:active{transform:scale(.97);}
+.fab .fe{font-size:19px;line-height:1;}
+/* ===== VOICE MEMO ===== */
+.rec-dot{display:inline-block;width:10px;height:10px;border-radius:50%;background:#fff;margin-right:6px;animation:recpulse 1s ease-in-out infinite;}
+@keyframes recpulse{0%,100%{opacity:1;}50%{opacity:.35;}}
+.memo{display:flex;align-items:center;gap:10px;padding:10px 0;border-top:1px solid var(--border);}
+.memo audio{flex:1;height:36px;min-width:0;}
+.memo .mt{font-size:11px;color:var(--text-tertiary);font-weight:600;white-space:nowrap;}
 .footer-credit{text-align:center;font-size:11px;color:var(--text-tertiary);padding:var(--space-lg) 0 4px;}
 .footer-credit a{color:var(--text-secondary);text-decoration:none;font-weight:600;}
 .disclaimer{font-size:11px;color:var(--text-tertiary);line-height:1.5;background:var(--bg-inset);border:1px solid var(--border);border-radius:var(--radius-md);padding:var(--space-md);margin-bottom:var(--space-md);}
@@ -286,6 +296,8 @@ textarea.inp{resize:vertical;min-height:80px;font-size:14px;line-height:1.5;}
     <div class="screen" id="screen-response"></div>
     <div class="screen" id="screen-note"></div>
   </div>
+
+  <button class="fab" id="fab" onclick="openCommunicate()"><span class="fe">🤟</span>Translate</button>
 
   <div class="tab-bar" id="tabBar">
     <button class="tab active" data-screen="monitor"><span class="ti">📊</span>Monitor</button>
@@ -888,9 +900,22 @@ function renderNote(){
   const txt=buildNote();
   let h=`<h2>📝 Session note</h2><div class="subtitle">Auto-generated from this session — edit, copy, or download.</div>`;
   h+=`<div class="row" style="margin-bottom:12px"><button class="btn sm" onclick="copyNote()">📋 Copy</button><button class="btn sm" onclick="downloadNote()">⬇ Download</button><button class="btn sm" onclick="state.session.note='';renderNote()">↻ Regenerate</button></div>`;
-  h+=`<div class="card"><textarea class="inp note-output" id="noteArea" style="min-height:420px" oninput="state.session.note=this.value;saveSession()">${esc(txt)}</textarea></div>`;
+  h+=`<div class="card"><textarea class="inp note-output" id="noteArea" style="min-height:340px" oninput="state.session.note=this.value;saveSession()">${esc(txt)}</textarea></div>`;
+  // ----- voice memos -----
+  const recording=mediaRec&&mediaRec.state==='recording';
+  h+=`<div class="section-label">Voice memos</div><div class="card">`;
+  if(recording)h+=`<button class="btn danger" onclick="stopVoiceMemo()"><span class="rec-dot"></span>Stop recording · <span id="recTimer">0:00</span></button>`;
+  else h+=`<button class="btn" onclick="startVoiceMemo()">🎙️ Record voice memo</button>`;
+  const memos=(state.session.voiceMemos||[]);
+  if(memos.length)memos.slice().reverse().forEach(m=>{
+    const url=URL.createObjectURL(m.blob);
+    h+=`<div class="memo"><audio controls preload="metadata" src="${url}"></audio><span class="mt">${fmtTime(m.time)}${m.dur?` · ${Math.floor(m.dur/60)}:${String(m.dur%60).padStart(2,'0')}`:''}</span><span onclick="delVoiceMemo('${m.id}')" style="color:var(--danger);cursor:pointer;padding:4px">✕</span></div>`;
+  });
+  else if(!recording)h+=`<div class="muted" style="margin-top:8px">No voice memos yet. Recordings are saved with this session, on this device.</div>`;
+  h+=`</div>`;
   h+=`<div class="disclaimer">Prototype documentation aid. Not a legal medical record. Verify all values before entering into the chart.</div>`;
   $('#screen-note').innerHTML=h;
+  if(recording)startRecTimer();
 }
 function buildNote(){
   if(state.session.note)return state.session.note;
@@ -914,6 +939,7 @@ function buildNote(){
   if(s.checkins.length){L.push('PATIENT CHECK-INS');s.checkins.forEach(c=>L.push('  • '+fmtTime(c.time)+': distress '+c.distress+'/10'+(c.feelings.length?' — '+c.feelings.join(', '):'')+(c.note?' — "'+c.note+'"':'')));L.push('');}
   // scales
   if(s.scales.length){L.push('SCALES ADMINISTERED');s.scales.forEach(r=>{if(r.scaleId==='cssrs')L.push('  • C-SSRS: '+r.risk+' risk (highest Q'+(r.highest||'-')+')');else L.push('  • '+SCALES[r.scaleId].name+': '+r.score+'/'+SCALES[r.scaleId].max+' ('+r.severity+')');});L.push('');}
+  if(s.voiceMemos&&s.voiceMemos.length){L.push('VOICE MEMOS: '+s.voiceMemos.length+' recording(s) attached to this session (audio, stored locally).');L.push('');}
   L.push('Provider: ____________________   Signature: ____________________');
   L.push('');
   L.push('— Generated by PsychBridge (prototype). Not a validated medical record.');
@@ -921,6 +947,29 @@ function buildNote(){
 }
 const LABELS={agent:'Agent',dose:'Dose',rate:'Infusion (min)',route:'Route',placement:'Electrode placement',charge:'Charge (mC)',pct:'Energy (%)',pw:'Pulse width (ms)',multiple:'× seizure threshold',induction:'Induction agent',inddose:'Induction dose (mg/kg)',nmb:'Muscle relaxant',motor:'Motor seizure (s)',eeg:'EEG seizure (s)',psi:'Postictal suppression',ictal:'Ictal notes',rot:'Reorientation (min)',confusion:'Post-ictal confusion',memory:'Subjective memory',rmt:'Resting MT (%MSO)',intensity:'Intensity (% MT)',rmtmethod:'RMT method',protocol:'Protocol',target:'Target',pulses:'Pulses/session',sessno:'Session #',scalp:'Scalp pain (0-10)',headache:'Headache',safety:'Safety events',side:'Hemisphere',config:'Configuration'};
 function labelFor(k){return LABELS[k]||k;}
+/* ----- voice memos ----- */
+let mediaRec=null,recChunks=[],recStart=0,recInterval=null;
+async function startVoiceMemo(){
+  if(!state.patient){toast('Pick a patient first');return;}
+  if(!navigator.mediaDevices||!window.MediaRecorder){toast('Recording not supported on this browser');return;}
+  try{
+    const stream=await navigator.mediaDevices.getUserMedia({audio:true});
+    recChunks=[];mediaRec=new MediaRecorder(stream);
+    mediaRec.ondataavailable=e=>{if(e.data&&e.data.size)recChunks.push(e.data);};
+    mediaRec.onstop=async()=>{
+      const blob=new Blob(recChunks,{type:(mediaRec&&mediaRec.mimeType)||'audio/webm'});
+      const dur=Math.round((Date.now()-recStart)/1000);
+      state.session.voiceMemos=state.session.voiceMemos||[];
+      state.session.voiceMemos.push({id:uid(),time:nowISO(),blob,dur});
+      stream.getTracks().forEach(t=>t.stop());
+      await saveSession();renderNote();toast('Voice memo saved ✓');
+    };
+    mediaRec.start();recStart=Date.now();renderNote();
+  }catch(e){toast('Microphone unavailable — check permissions');}
+}
+function stopVoiceMemo(){if(recInterval){clearInterval(recInterval);recInterval=null;}if(mediaRec&&mediaRec.state==='recording')mediaRec.stop();}
+function startRecTimer(){if(recInterval)clearInterval(recInterval);recInterval=setInterval(()=>{const el=$('#recTimer');if(!el)return;const s=Math.floor((Date.now()-recStart)/1000);el.textContent=Math.floor(s/60)+':'+String(s%60).padStart(2,'0');},400);}
+async function delVoiceMemo(id){state.session.voiceMemos=(state.session.voiceMemos||[]).filter(m=>m.id!==id);await saveSession();renderNote();}
 function copyNote(){const t=$('#noteArea').value;navigator.clipboard.writeText(t).then(()=>toast('Note copied ✓'),()=>toast('Copy failed'));}
 function downloadNote(){const t=$('#noteArea').value;const b=new Blob([t],{type:'text/plain'});const a=el('a');a.href=URL.createObjectURL(b);a.download='psychbridge_note_'+new Date().toISOString().slice(0,10)+'.txt';a.click();toast('Downloaded ✓');}
 
