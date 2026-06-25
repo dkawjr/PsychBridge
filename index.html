@@ -56,6 +56,12 @@ html{font-size:16px;-webkit-text-size-adjust:100%;-webkit-tap-highlight-color:tr
 }
 body{font-family:var(--font);background:var(--bg);color:var(--text-primary);line-height:1.5;overflow:hidden;height:100dvh;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;}
 .app{max-width:var(--max-width);margin:0 auto;height:100dvh;display:flex;flex-direction:column;background:var(--bg);position:relative;overflow:hidden;}
+/* Large screens (iPad / desktop): frame the column so it reads as an intentional app */
+@media (min-width:600px){
+  body{background:#E4E4EE;}
+  [data-theme="dark"] body{background:#070610;}
+  .app{box-shadow:0 0 0 1px var(--border),0 24px 70px rgba(20,15,40,.18);}
+}
 
 /* ===== TOP NAV ===== */
 .top-nav{height:var(--nav-height);display:flex;align-items:center;justify-content:space-between;padding:0 var(--space-lg);background:var(--bg-elevated);border-bottom:1px solid var(--border);flex-shrink:0;z-index:10;}
