@@ -1,0 +1,25 @@
+{
+  "name": "psychbridge",
+  "version": "1.0.0",
+  "description": "PsychBridge — bedside companion for interventional psychiatry (ECT, Ketamine, TMS, DBS). Public demo build.",
+  "main": "index.html",
+  "scripts": {
+    "deidentify": "node deidentify.mjs",
+    "build:www": "node build-www.mjs",
+    "sync": "npm run build:www && npx cap sync",
+    "open:ios": "npx cap open ios",
+    "open:android": "npx cap open android"
+  },
+  "keywords": ["psychiatry", "ect", "ketamine", "tms", "dbs"],
+  "author": "D. K. Adrian Williams",
+  "license": "ISC",
+  "dependencies": {
+    "@capacitor/android": "^8.4.1",
+    "@capacitor/cli": "^8.4.1",
+    "@capacitor/core": "^8.4.1",
+    "@capacitor/ios": "^8.4.1"
+  },
+  "devDependencies": {
+    "@capacitor/assets": "^3.0.5"
+  }
+}

@@ -408,19 +408,7 @@ const SCALES={
 
   madrs:{id:'madrs',name:'MADRS',full:'Montgomery–Åsberg Depression Rating Scale',abbr:'MADRS',kind:'clinician',timeframe:'Past 7 days (clinician-rated)',
     leadIn:'Clinician-rated. Anchors are defined at 0, 2, 4, 6; ratings of 1, 3, 5 are intermediate steps.',
-    max:60, anchorScale:6,
-    items:[
-      {t:"Apparent sadness",o:{0:"No sadness",2:"Looks dispirited but does brighten up without difficulty",4:"Appears sad and unhappy most of the time",6:"Looks miserable all the time; extremely despondent"}},
-      {t:"Reported sadness",o:{0:"Occasional sadness in keeping with the circumstances",2:"Sad or low but brightens up without difficulty",4:"Pervasive sadness or gloominess; mood still influenced by circumstances",6:"Continuous or unvarying sadness, misery or despondency"}},
-      {t:"Inner tension",o:{0:"Placid; only fleeting inner tension",2:"Occasional feelings of edginess and ill-defined discomfort",4:"Continuous inner tension or intermittent panic mastered with some difficulty",6:"Unrelenting dread or anguish; overwhelming panic"}},
-      {t:"Reduced sleep",o:{0:"Sleeps as usual",2:"Slight difficulty dropping off or slightly reduced, light or fitful sleep",4:"Sleep reduced or broken by at least two hours",6:"Less than two or three hours sleep"}},
-      {t:"Reduced appetite",o:{0:"Normal or increased appetite",2:"Slightly reduced appetite",4:"No appetite; food is tasteless",6:"Needs persuasion to eat at all"}},
-      {t:"Concentration difficulties",o:{0:"No difficulties in concentrating",2:"Occasional difficulties collecting one's thoughts",4:"Difficulties concentrating and sustaining thought; reduces reading/conversation",6:"Unable to read or converse without great difficulty"}},
-      {t:"Lassitude",o:{0:"Hardly any difficulty getting started; no sluggishness",2:"Difficulties starting activities",4:"Difficulties starting simple routine activities, carried out with effort",6:"Complete lassitude; unable to do anything without help"}},
-      {t:"Inability to feel",o:{0:"Normal interest in surroundings and other people",2:"Reduced ability to enjoy usual interests",4:"Loss of interest in surroundings; loss of feelings for friends/acquaintances",6:"Emotionally paralysed; inability to feel anger, grief or pleasure"}},
-      {t:"Pessimistic thoughts",o:{0:"No pessimistic thoughts",2:"Fluctuating ideas of failure, self-reproach or self-depreciation",4:"Persistent self-accusations; rational ideas of guilt/sin; increasingly pessimistic",6:"Delusions of ruin, remorse or unredeemable sin; absurd, unshakable self-accusation"}},
-      {t:"Suicidal thoughts",o:{0:"Enjoys life or takes it as it comes",2:"Weary of life; only fleeting suicidal thoughts",4:"Probably better off dead; suicidal thoughts common; suicide considered but no specific plan",6:"Explicit plans for suicide when there is an opportunity; active preparations"}}
-    ],
+    max:60, anchorScale:6, locked:true, items:[],
     score:a=>a.reduce((s,x)=>s+(x||0),0),
     severity:s=>s>=35?['Severe','danger']:s>=20?['Moderate','warn']:s>=7?['Mild','warn']:['Normal','ok'],
     remission:s=>s<=10, responder:(b,c)=>b>0&&c<=b*0.5,
@@ -430,8 +418,7 @@ const SCALES={
 
   cadss:{id:'cadss',name:'CADSS',full:'Clinician-Administered Dissociative States Scale (23-item subjective)',abbr:'CADSS',kind:'self',timeframe:'Right now / current state',
     leadIn:'Rate your present state right now. (Used to track dissociation around ketamine/esketamine dosing — administer pre-dose, ~40 min, and ~1.5 h.)',
-    options:CADSS_OPTS,max:92,
-    items:["Do things seem to be moving in slow motion?","Do things seem to be unreal to you, as if you are in a dream?","Do you have some experience that separates you from what is happening; for instance, do you feel as if you are in a movie or a play, or as if you are a robot?","Do you feel as if you are looking at things from outside of your body?","Do you feel as if you are watching the situation as an observer or a spectator?","Do you feel disconnected from your own body?","Does your sense of your own body feel changed: for instance, does your own body feel unusually large or unusually small?","Do people seem motionless, dead, or mechanical?","Do objects look different than you would expect?","Do colors seem to be diminished in intensity?","Do you see things as if you were in a tunnel, or looking through a wide-angle photographic lens?","Does this interview seem to be taking much longer than you would have expected?","Do things seem to be happening very quickly, as if there is a lifetime in a moment?","Have there been things which have happened during this interview that now you can't account for?","Have you spaced out, or in some other way lost track of what was going on during this experience?","Have sounds almost disappeared or become much stronger than you would have expected?","Do things seem very real, as if there is a special sense of clarity?","Does it seem as if you are looking at the world through a fog, so that people and objects appear far away or unclear?","Do colors seem much brighter than you would have expected?","Do you feel confused about who you really are?","Do you feel like there are different parts of yourself which do not fit together?","Do you have gaps in your memory?","Do you feel like you have more than one identity?"],
+    options:CADSS_OPTS,max:92, locked:true, items:[],
     score:a=>a.reduce((s,x)=>s+(x||0),0),
     subscales:a=>{const S=(...i)=>i.reduce((s,x)=>s+(a[x]||0),0);return{Depersonalization:S(2,3,4,5,6,19,22),Derealization:S(0,1,7,8,9,10,11,12,15,16,17,18,20),Amnesia:S(13,14,21)};},
     severity:s=>s>0?['Dissociation present — track vs baseline','info']:['No dissociation reported','ok'],
@@ -440,7 +427,7 @@ const SCALES={
 
   cssrs:{id:'cssrs',name:'C-SSRS',full:'Columbia–Suicide Severity Rating Scale (Screener)',abbr:'C\nSSRS',kind:'screener',timeframe:'Past month (behavior: lifetime)',
     leadIn:'Suicide-risk screener. Triage is driven by the highest-numbered "Yes", not a total score.',
-    cite:'Posner et al. © 2008 Research Foundation for Mental Hygiene. Free, but requires permission via cssrs.columbia.edu to embed.',license:'© — permission required'}
+    cite:'Posner et al. © 2008 Research Foundation for Mental Hygiene. Free, but requires permission via cssrs.columbia.edu to embed.',license:'© — permission required',locked:true}
 };
 const SCALE_ORDER=['phq9','gad7','qids','madrs','cadss','cssrs'];
 
@@ -757,16 +744,17 @@ function lastScaleResult(id){const all=[];state.sessions.filter(s=>state.patient
 function renderScales(){
   let h=`<h2>📋 Rating scales</h2><div class="subtitle">Validated instruments — administer and track across visits.</div>`;
   // suggested for current proc
-  const sugg={ketamine:['cadss','madrs','phq9'],ect:['madrs','phq9'],tms:['phq9','madrs','qids'],dbs:['madrs','phq9']}[state.proc]||[];
+  const sugg={ketamine:['phq9','gad7','qids'],ect:['phq9','qids'],tms:['phq9','gad7','qids'],dbs:['phq9','qids']}[state.proc]||[];
   h+=`<div class="section-label">Suggested for ${esc(PROCEDURES[state.proc].name)}</div><div class="card flush">`;
   sugg.forEach(id=>h+=scaleRow(id));
   h+=`</div><div class="section-label">All instruments</div><div class="card flush">`;
   SCALE_ORDER.filter(id=>!sugg.includes(id)).forEach(id=>h+=scaleRow(id));
   h+=`</div>`;
-  h+=`<div class="disclaimer">⚠️ C-SSRS and CADSS/MADRS carry copyright/permission terms — see each scale's citation. This prototype reproduces items for development; clearance is required before clinical/commercial deployment.</div>`;
+  h+=`<div class="disclaimer">🔒 This public demo includes only freely-reproducible instruments (PHQ-9, GAD-7, QIDS-SR16). C-SSRS, MADRS, and CADSS are licensed and their items are omitted here — obtain permission to enable them in a private build. This is an educational prototype, not a validated medical device.</div>`;
   $('#screen-scales').innerHTML=h;
 }
 function scaleRow(id){const sc=SCALES[id];const last=lastScaleResult(id);
+  if(sc.locked)return `<div class="scale-item" onclick="openScale('${id}')" style="opacity:.62"><div class="sic">${esc(sc.abbr).replace(/\n/g,'<br>')}</div><div class="sinfo"><div class="sname">${esc(sc.name)} 🔒</div><div class="sdesc">Licensed instrument — tap for details</div></div><span class="chev" style="color:var(--text-tertiary)">›</span></div>`;
   let right='';
   if(last){if(id==='cssrs')right=`<div class="slast" style="color:var(--${last.risk==='HIGH'?'danger':last.risk==='MODERATE'?'warning':'success'})">${last.risk}</div>`;
     else right=`<div class="slast">${last.score}<span class="muted" style="font-weight:400">/${sc.max}</span></div>`;}
@@ -775,8 +763,10 @@ function scaleRow(id){const sc=SCALES[id];const last=lastScaleResult(id);
 
 /* ---- scale administration (modal) ---- */
 let curScale=null,curAnswers=[];
+function openLockedScale(id){const sc=SCALES[id];openSheet(esc(sc.name)+' 🔒','Licensed instrument',`<div class="flag warn"><span class="fi">🔒</span><div><strong>${esc(sc.name)} is a licensed instrument.</strong> Its items are not included in this public demo build.<br><br>${esc(sc.cite||'')}<br><br>Obtain the appropriate permission/license, then add the items in a private build to enable it.</div></div>`,`<button class="btn primary" onclick="closeSheet()">Got it</button>`);}
 function openScale(id){
   curScale=SCALES[id];curAnswers=[];
+  if(curScale.locked){openLockedScale(id);return;}
   if(id==='cssrs'){openCSSRS();return;}
   let body=`<div class="flag info"><span class="fi">📋</span><div>${esc(curScale.leadIn)}</div></div>`;
   curScale.items.forEach((it,i)=>{
@@ -829,12 +819,12 @@ let cssrsAns={};
 function openCSSRS(){
   cssrsAns={};
   const Q=[
-    {n:1,t:'Wish to be dead',q:'Have you wished you were dead or wished you could go to sleep and not wake up?'},
-    {n:2,t:'Suicidal thoughts',q:'Have you actually had any thoughts of killing yourself?'},
-    {n:3,t:'Thoughts with method (no plan/intent)',q:'Have you been thinking about how you might kill yourself?',dep:2},
-    {n:4,t:'Some intent (no plan)',q:'Have you had these thoughts and had some intention of acting on them?',dep:2},
-    {n:5,t:'Plan & intent',q:'Have you started to work out or worked out the details of how to kill yourself? Do you intend to carry out this plan?',dep:2},
-    {n:6,t:'Suicidal behavior (lifetime)',q:'Have you ever done anything, started to do anything, or prepared to do anything to end your life?'}
+    {n:1,t:'Wish to be dead',q:'(licensed C-SSRS item — omitted in public demo)'},
+    {n:2,t:'Suicidal thoughts',q:'(licensed C-SSRS item — omitted in public demo)'},
+    {n:3,t:'Thoughts with method (no plan/intent)',q:'(licensed C-SSRS item — omitted in public demo)',dep:2},
+    {n:4,t:'Some intent (no plan)',q:'(licensed C-SSRS item — omitted in public demo)',dep:2},
+    {n:5,t:'Plan & intent',q:'(licensed C-SSRS item — omitted in public demo)',dep:2},
+    {n:6,t:'Suicidal behavior (lifetime)',q:'(licensed C-SSRS item — omitted in public demo)'}
   ];
   let body=`<div class="flag info"><span class="fi">📋</span><div>${esc(SCALES.cssrs.leadIn)} Ideation questions cover the <strong>past month</strong>.</div></div>`;
   Q.forEach(item=>{body+=`<div class="q" id="cq${item.n}" data-dep="${item.dep||''}"><div class="qn">QUESTION ${item.n}</div><div class="qt">${esc(item.t)}</div><div class="muted" style="margin-bottom:8px">${esc(item.q)}</div>
@@ -1009,20 +999,17 @@ function openPatientSheet(){
       body+=`<div class="scale-item" onclick="selectPatient('${p.id}')"><div class="pavatar" style="width:34px;height:34px">${esc((label[0]||'?').toUpperCase())}</div><div class="sinfo"><div class="sname">${esc(label)} ${active?'<span class="deid-pill" style="margin-left:4px">current</span>':''}</div><div class="sdesc">${p.identified?'<span style=color:var(--warning)>PHI</span>':'De-identified'}${p.dx?' · '+esc(p.dx):''}</div></div><span onclick="event.stopPropagation();delPatient('${p.id}')" style="color:var(--danger);padding:8px">🗑</span></div>`;});
     body+=`</div>`;}
   body+=`<div class="section-label">New patient</div>`;
-  body+=`<div class="field"><label>Mode</label><div class="seg" id="newMode"><button class="on" onclick="newPatientMode(this,false)">De-identified</button><button onclick="newPatientMode(this,true)">Identified (PHI)</button></div></div>`;
+  /* Public demo build: de-identified records only — PHI / identified mode removed. */
+  body+=`<div class="flag info"><span class="fi">🔒</span><div>This demo keeps <strong>de-identified</strong> records only (study/session codes, no names or MRNs). Data stays in this browser.</div></div>`;
   body+=`<div id="deidFields"><div class="field"><label>Study / session code <span class="hint">no name</span></label><input class="inp" id="npCode" placeholder="e.g. KET-014"></div></div>`;
-  body+=`<div id="phiFields" style="display:none"><div class="flag warn"><span class="fi">⚠️</span><div><strong>This makes the record PHI.</strong> Handle per HIPAA. This prototype stores data only in this browser (IndexedDB) with no encryption, access control, or audit — not for real PHI without proper controls.</div></div>
-    <div class="field"><label>Name</label><input class="inp" id="npName" placeholder="Last, First"></div>
-    <div class="row"><div class="field"><label>MRN</label><input class="inp" id="npMrn"></div><div class="field"><label>DOB</label><input class="inp" id="npDob" placeholder="YYYY-MM-DD"></div></div>`;
   body+=`<div class="field"><label>Working diagnosis (optional)</label><input class="inp" id="npDx" placeholder="e.g. Treatment-resistant MDD"></div>`;
   openSheet('Patients','Choose, add, or remove',body,`<button class="btn ghost" onclick="closeSheet()">Close</button><button class="btn primary" onclick="createPatient()">＋ Create patient</button>`);
 }
 let npIdentified=false;
 function newPatientMode(node,id){npIdentified=id;$$('#newMode button').forEach(b=>b.classList.remove('on'));node.classList.add('on');$('#deidFields').style.display=id?'none':'block';$('#phiFields').style.display=id?'block':'none';}
 async function createPatient(){
-  const p={id:uid(),identified:npIdentified,createdAt:nowISO()};
-  if(npIdentified){p.name=$('#npName').value.trim();p.mrn=$('#npMrn').value.trim();p.dob=$('#npDob').value.trim();if(!p.name){toast('Enter a name');return;}}
-  else{p.code=$('#npCode').value.trim()||('Anon-'+Math.floor(Math.random()*900+100));}
+  const p={id:uid(),identified:false,createdAt:nowISO()};
+  p.code=$('#npCode').value.trim()||('Anon-'+Math.floor(Math.random()*900+100));
   p.dx=$('#npDx').value.trim();
   await dbPut('patients',p);state.patients.push(p);state.patient=p;await dbPut('kv',{k:'lastPatient',v:p.id});
   npIdentified=false;closeSheet();ensureSession();render();toast('Patient created ✓');
