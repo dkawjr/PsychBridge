@@ -43,8 +43,14 @@ npx cap sync
 ```bash
 npx cap open ios
 ```
-Then in Xcode: set Team + Bundle ID `com.dkawjr.psychbridge`, deployment target iOS 14+, version 1.0.0 / build 1,
-**Product → Archive → Distribute → App Store Connect**. In App Store Connect fill the listing (`STORE_LISTING.md`),
+Then in Xcode: set Team + Bundle ID `com.dkawjr.psychbridge`, deployment target iOS 15, version 1.0.0 / build 1.
+**Add the privacy manifest to the target** (required since 2024): right-click the `App/App` group → *Add Files
+to "App"* → select `App/App/PrivacyInfo.xcprivacy` (already in the repo; declares no tracking / no data
+collected). Export compliance is pre-answered (`ITSAppUsesNonExemptEncryption = false` is in Info.plist). Then
+**Product → Archive → Distribute → App Store Connect**.
+
+Store assets are ready in the repo: designed icon (`assets/icon.png`), and 3 screenshots in
+`store-screenshots/` (1290×2796, iPhone 6.7"). Privacy-form answers: `PRIVACY_ANSWERS.md`. In App Store Connect fill the listing (`STORE_LISTING.md`),
 App Privacy (below), review notes (below), submit.
 
 **App Privacy:** Data collection = **None** (all on-device; de-identified; nothing transmitted).
