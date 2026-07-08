@@ -1198,25 +1198,112 @@ function renderCommBody(){const c=$('#commBody');if(!c)return;
       ${state.patient?`<button class="btn primary" style="margin-top:8px" onclick="commLog()">＋ Log message to check-in</button>`:`<div class="muted" style="margin-top:10px;text-align:center">Translate-only mode — pick a patient to save messages.</div>`}`;
     startCamera();
   }else{
-    c.innerHTML=`<div class="flag info"><span class="fi">👁️</span><div>Show these signs <strong>to the patient</strong> — the hand demonstrates each letter. Tap a quick phrase or type your own.</div></div>
-      <div class="ss-stage"><div class="ss-hand" id="ssHand"></div><div class="ss-letter" id="ssLetter">–</div></div>
+    c.innerHTML=`<div class="flag info"><span class="fi">👁️</span><div>Show these signs <strong>to the patient</strong> — the hand demonstrates each letter. Tap a quick phrase or type your own. Phrases with a saved clip play a <strong>real signed video</strong> instead.</div></div>
+      <div class="ss-stage"><div class="ss-hand" id="ssHand"></div><div class="ss-letter" id="ssLetter">–</div><video id="ssVideo" playsinline muted loop style="display:none;position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:inherit;z-index:2;"></video></div>
       <div class="ss-bar"><div id="ssBar"></div></div>
       <div class="ss-word" id="ssWord"><span class="ph">Type or tap a phrase to fingerspell…</span></div>
       <div class="field" style="margin-top:10px"><input class="inp" id="ssInput" placeholder="Type a message to sign…" onkeydown="if(event.key==='Enter')playShow(this.value)"></div>
-      <div class="row"><button class="btn primary" onclick="playShow(document.getElementById('ssInput').value)">Show signs</button><button class="btn" onclick="if(ssLast)playShow(ssLast)">↻ Replay</button></div>
+      <div class="row"><button class="btn primary" onclick="playShow(document.getElementById('ssInput').value)">Show signs</button><button class="btn" onclick="if(ssLast)playShow(ssLast)">↻ Replay</button><button class="btn" id="pbSsSwap" style="display:none"></button></div>
       <div class="section-label">Quick phrases</div>
-      <div class="ss-chips">${SHOW_PHRASES.map(p=>`<button onclick="playShow('${p.replace(/'/g,"\\'")}')">${esc(p)}</button>`).join('')}</div>`;
-    loadLetterSVGs();
+      <div class="ss-chips">${SHOW_PHRASES.map(p=>`<button onclick="playShow('${p.replace(/'/g,"\\'")}')">${esc(p)}</button>`).join('')}</div>
+      <details style="margin-top:14px">
+        <summary style="cursor:pointer;font-weight:700;font-size:14px;color:var(--text-secondary)">🎬 Sign video library — real signs for these phrases</summary>
+        <div class="muted" style="margin:8px 0;font-size:12.5px;line-height:1.5">Watch the real sign (buttons below — opens in-app), then <strong>record yourself or your interpreter</strong> performing it. Clips stay on this device and play automatically whenever that word or phrase is shown. Only import videos you have rights to.</div>
+        <div class="field"><input class="inp" id="pbClipWord" placeholder="word or phrase, e.g. pain" autocapitalize="none" oninput="pbClipLinks()"></div>
+        <div class="row" id="pbClipLinkRow" style="display:none"><button class="btn" id="pbClipAsl" onclick="openSignPage(this.dataset.url)">👀 SignASL ↗</button><button class="btn" id="pbClipSavvy" onclick="openSignPage(this.dataset.url)">👀 SigningSavvy ↗</button></div>
+        <div class="row"><button class="btn primary" id="pbClipRecBtn" onclick="pbClipRecord()">⏺ Record (6s)</button><button class="btn" onclick="document.getElementById('pbClipFile').click()">⬆ Import</button><input type="file" id="pbClipFile" accept="video/*" style="display:none" onchange="pbClipImport(event)"></div>
+        <video id="pbClipPrev" playsinline muted loop style="display:none;width:100%;max-width:260px;border-radius:12px;margin:8px auto"></video>
+        <div id="pbClipList" style="margin-top:6px"></div>
+      </details>`;
+    loadLetterSVGs();pbRenderClipList();
   }
 }
+/* ----- SIGN VIDEO LIBRARY: owned whole-sign clips (recorded/imported, on-device IndexedDB).
+   A phrase (or its key content word) with a saved clip plays the real sign instead of
+   fingerspelling. Clips never leave the device. ----- */
+const pbSignVideos={};
+const PB_CLIP_STOP=new Set(['a','an','the','is','are','am','you','your','my','me','i','to','of','it','in','on','do','can']);
+function pbClipDb(){return new Promise((res,rej)=>{const rq=indexedDB.open('psychbridge-clips',1);rq.onupgradeneeded=()=>rq.result.createObjectStore('clips',{keyPath:'word'});rq.onsuccess=()=>res(rq.result);rq.onerror=()=>rej(rq.error);});}
+async function pbClipPut(word,blob){const db=await pbClipDb();await new Promise((res,rej)=>{const tx=db.transaction('clips','readwrite');tx.objectStore('clips').put({word,blob,type:blob.type,addedAt:Date.now()});tx.oncomplete=res;tx.onerror=()=>rej(tx.error);});}
+async function pbClipRemove(word){const db=await pbClipDb();await new Promise((res,rej)=>{const tx=db.transaction('clips','readwrite');tx.objectStore('clips').delete(word);tx.oncomplete=res;tx.onerror=()=>rej(tx.error);});if(pbSignVideos[word]){URL.revokeObjectURL(pbSignVideos[word]);delete pbSignVideos[word];}await pbLoadClips();}
+function pbClipAllRows(){return pbClipDb().then(db=>new Promise((res,rej)=>{const rq=db.transaction('clips','readonly').objectStore('clips').getAll();rq.onsuccess=()=>res(rq.result||[]);rq.onerror=()=>rej(rq.error);}));}
+async function pbLoadClips(){let rows=[];try{rows=await pbClipAllRows();}catch(e){return;}for(const r of rows){if(pbSignVideos[r.word])URL.revokeObjectURL(pbSignVideos[r.word]);pbSignVideos[r.word]=URL.createObjectURL(r.blob);}pbRenderClipList(rows);}
+function pbClipKey(t){const p=String(t||'').toLowerCase().replace(/[^a-z\s'-]/g,'').replace(/\s+/g,' ').trim();if(pbSignVideos[p])return p;const ws=p.split(' ').filter(w=>w&&!PB_CLIP_STOP.has(w)).sort((a,b)=>b.length-a.length);return ws.find(w=>pbSignVideos[w])||'';}
+function pbClipFor(t){const k=pbClipKey(t);return k?pbSignVideos[k]:null;}
+function pbRenderClipList(rows){const list=document.getElementById('pbClipList');if(!list)return;
+  const render=rs=>{list.innerHTML='';rs.sort((a,b)=>a.word.localeCompare(b.word)).forEach(r=>{
+    const row=document.createElement('div');row.className='row';row.style.cssText='align-items:center;margin-top:6px';
+    const nm=document.createElement('span');nm.textContent='🎬 '+r.word;nm.style.cssText='flex:1;font-weight:600;font-size:14px';
+    const pl=document.createElement('button');pl.className='btn';pl.textContent='▶';pl.setAttribute('aria-label','Preview '+r.word);
+    pl.onclick=()=>{const p=document.getElementById('pbClipPrev');if(p){p.src=pbSignVideos[r.word];p.style.display='block';p.loop=true;p.play().catch(()=>{});}};
+    const dl=document.createElement('button');dl.className='btn';dl.textContent='🗑';dl.style.color='var(--danger)';dl.setAttribute('aria-label','Delete '+r.word);
+    dl.onclick=()=>{if(confirm('Delete the "'+r.word+'" clip?'))pbClipRemove(r.word);};
+    row.append(nm,pl,dl);list.appendChild(row);});};
+  if(rows){render(rows);}else{pbClipAllRows().then(render).catch(()=>{});}}
+function pbClipWordVal(){const el=document.getElementById('pbClipWord');return el?el.value.toLowerCase().replace(/[^a-z\s'-]/g,'').replace(/\s+/g,' ').trim():'';}
+function pbClipLinks(){const w=pbClipWordVal(),row=document.getElementById('pbClipLinkRow');if(!row)return;
+  if(!w){row.style.display='none';return;}row.style.display='flex';
+  const a=document.getElementById('pbClipAsl'),s=document.getElementById('pbClipSavvy');
+  if(a)a.dataset.url='https://www.signasl.org/sign/'+encodeURIComponent(w.replace(/\s+/g,'-'));
+  if(s)s.dataset.url='https://www.signingsavvy.com/search/'+encodeURIComponent(w.toUpperCase());}
+async function openSignPage(url){if(!url)return;
+  try{const B=window.Capacitor&&window.Capacitor.Plugins&&window.Capacitor.Plugins.Browser;
+    if(B){await B.open({url});return;}}catch(e){}
+  window.open(url,'_blank','noopener');}   // native: in-app browser sheet; web: new tab
+async function pbClipImport(ev){const f=ev.target.files&&ev.target.files[0];ev.target.value='';if(!f)return;
+  const w=pbClipWordVal();if(!w){toast('Type the word first, then import');return;}
+  if(f.size>25*1024*1024){toast('Video too large (max 25 MB)');return;}
+  await pbClipPut(w,f);await pbLoadClips();toast('Sign clip saved: '+w);
+  const p=document.getElementById('pbClipPrev');if(p){p.src=pbSignVideos[w];p.style.display='block';p.loop=true;p.play().catch(()=>{});}}
+let pbClipRecObj=null,pbClipStream=null,pbClipChunks=[];
+async function pbClipRecord(){const btn=document.getElementById('pbClipRecBtn'),prev=document.getElementById('pbClipPrev');
+  if(pbClipRecObj&&pbClipRecObj.state==='recording'){pbClipRecObj.stop();return;}
+  const w=pbClipWordVal();if(!w){toast('Type the word first, then record');return;}
+  if(!window.MediaRecorder){toast('Recording not supported — use Import');return;}
+  try{pbClipStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user',width:640,height:480},audio:false});}
+  catch(e){toast('Camera unavailable');return;}
+  if(prev){prev.srcObject=pbClipStream;prev.style.display='block';prev.muted=true;prev.play().catch(()=>{});}
+  const mime=['video/mp4','video/webm;codecs=vp9','video/webm'].find(t=>MediaRecorder.isTypeSupported(t))||'';
+  pbClipChunks=[];pbClipRecObj=new MediaRecorder(pbClipStream,mime?{mimeType:mime}:undefined);
+  pbClipRecObj.ondataavailable=e=>{if(e.data&&e.data.size)pbClipChunks.push(e.data);};
+  pbClipRecObj.onstop=async()=>{const rec=pbClipRecObj;pbClipRecObj=null;
+    pbClipStream.getTracks().forEach(t=>t.stop());pbClipStream=null;
+    if(btn)btn.textContent='⏺ Record (6s)';if(prev)prev.srcObject=null;
+    const blob=new Blob(pbClipChunks,{type:(rec&&rec.mimeType)||'video/webm'});
+    if(blob.size<2000){if(prev)prev.style.display='none';return;}
+    await pbClipPut(w,blob);await pbLoadClips();toast('Sign clip saved: '+w);
+    if(prev){prev.src=pbSignVideos[w];prev.loop=true;prev.play().catch(()=>{});}};
+  pbClipRecObj.start();if(btn)btn.textContent='⏹ Stop & save';
+  setTimeout(()=>{if(pbClipRecObj&&pbClipRecObj.state==='recording')pbClipRecObj.stop();},6000);}
+pbLoadClips();   // boot: hydrate clip map from IndexedDB
+
 /* ----- show-to-patient fingerspelling player (canonical Wikimedia ASL alphabet SVGs) ----- */
 let pbLetterSVGs=null,fsTimer=null;
 async function loadLetterSVGs(){if(pbLetterSVGs)return pbLetterSVGs;try{pbLetterSVGs=await(await fetch('./model/alphabet_svgs.json')).json();}catch(e){pbLetterSVGs={};}return pbLetterSVGs;}
 function ssDrawLetter(L){const h=$('#ssHand');if(h)h.innerHTML=(pbLetterSVGs&&pbLetterSVGs[L])||'';}
 function ssRenderWord(letters,idx){const w=$('#ssWord');if(!w)return;if(!letters.length){w.innerHTML='<span class="ph">Type or tap a phrase to fingerspell…</span>';return;}
   w.innerHTML=letters.map((L,i)=>`<span class="${i<idx?'done':i===idx?'cur':''}">${L===' '?'&nbsp;':esc(L)}</span>`).join('');}
-async function playShow(text){
-  stopFingerspell();await loadLetterSVGs();
+async function playShow(text,forceFS){
+  stopFingerspell();
+  // Whole-sign clip wins by default, but fingerspelling stays one tap away (swap button) —
+  // and remains the automatic path for anything without a clip.
+  const swap=document.getElementById('pbSsSwap');
+  const clip=forceFS?null:pbClipFor(text);
+  if(clip){
+    ssLast=String(text||'');
+    const v=document.getElementById('ssVideo'),lt=$('#ssLetter'),bar=$('#ssBar'),h=$('#ssHand'),w=$('#ssWord');
+    if(h)h.innerHTML='';if(lt)lt.textContent='';
+    if(w)w.innerHTML='<span class="cur">'+esc(ssLast)+'</span>';
+    if(bar)bar.style.width='100%';
+    if(v){v.src=clip;v.style.display='block';v.play().catch(()=>{});}
+    if(swap){swap.style.display='inline-flex';swap.textContent='🖐 Fingerspell instead';swap.onclick=()=>playShow(ssLast,true);}
+    return;
+  }
+  if(swap){
+    if(pbClipFor(text)){swap.style.display='inline-flex';swap.textContent='🎬 Play sign video';const t=String(text||'');swap.onclick=()=>playShow(t,false);}
+    else swap.style.display='none';
+  }
+  await loadLetterSVGs();
   const disp=String(text||'').toUpperCase().replace(/[^A-Z ]/g,'').replace(/\s+/g,' ').trim();
   if(!disp){toast('Type a message to sign');return;}
   ssLast=disp;const letters=disp.split('');const pos=[];letters.forEach((c,i)=>{if(c!==' ')pos.push(i);});
@@ -1226,7 +1313,8 @@ async function playShow(text){
     const L=seq[i];if(lt)lt.textContent=L;ssDrawLetter(L);ssRenderWord(letters,pos[i]);if(bar)bar.style.width=Math.round((i+1)/seq.length*100)+'%';i++;fsTimer=setTimeout(tick,STEP);};
   tick();
 }
-function stopFingerspell(){if(fsTimer){clearTimeout(fsTimer);fsTimer=null;}}
+function stopFingerspell(){if(fsTimer){clearTimeout(fsTimer);fsTimer=null;}
+  const v=document.getElementById('ssVideo');if(v){try{v.pause();}catch(e){}v.removeAttribute('src');v.style.display='none';}}
 async function startCamera(){
   initHandLandmarker();loadASLModel().catch(()=>setCamStatus('Model failed to load'));
   try{
